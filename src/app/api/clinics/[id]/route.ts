@@ -1,0 +1,65 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { hasPermission } from '@/lib/permissions'
+import { z } from 'zod'
+
+const updateSchema = z.object({
+  name: z.string().min(2).optional(),
+  address: z.string().min(5).optional(),
+  accountNumber: z.string().optional(),
+  contactPerson: z.string().min(2).optional(),
+  contactNumber: z.string().min(10).optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  businessPotential: z.number().optional(),
+  regionId: z.string().cuid().optional(),
+  assignedRMId: z.string().optional(),
+  isActive: z.boolean().optional(),
+})
+
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const clinic = await db.clinic.findUnique({
+    where: { id: params.id },
+    include: {
+      region: true,
+      assignedRM: { select: { id: true, name: true, email: true } },
+      targets: { where: { year: new Date().getFullYear(), month: new Date().getMonth() + 1 } },
+    },
+  })
+  if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  return NextResponse.json({ data: clinic })
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!hasPermission(session.user.role, 'CLINIC_UPDATE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const body = await req.json()
+  const parsed = updateSchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 400 })
+
+  const clinic = await db.clinic.update({
+    where: { id: params.id },
+    data: { ...parsed.data, assignedRMId: parsed.data.assignedRMId || null, email: parsed.data.email || null },
+    include: { region: true, assignedRM: { select: { id: true, name: true } } },
+  })
+
+  await db.auditLog.create({ data: { userId: session.user.id, action: 'UPDATE', entity: 'Clinic', entityId: clinic.id } })
+  return NextResponse.json({ data: clinic })
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!hasPermission(session.user.role, 'CLINIC_DELETE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  await db.clinic.update({ where: { id: params.id }, data: { isActive: false } })
+  await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'Clinic', entityId: params.id } })
+  return NextResponse.json({ success: true })
+}
