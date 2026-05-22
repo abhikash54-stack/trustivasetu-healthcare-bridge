@@ -50,7 +50,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                 <p className="text-xs text-gray-500 truncate">{session?.user?.email}</p>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
+                onClick={() => signOut({ callbackUrl: '/lms/login' })}
                 className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

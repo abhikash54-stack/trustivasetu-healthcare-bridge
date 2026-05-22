@@ -1,14 +1,20 @@
 /**
- * Call from your Trustiva LOS (Healthcare Partner Console) frontend.
- * Set NEXT_PUBLIC_LMS_URL and NEXT_PUBLIC_LOS_API_KEY in LOS .env
+ * Trustiva LOS → LMS sync client
+ * Set NEXT_PUBLIC_LMS_URL and NEXT_PUBLIC_LOS_API_KEY in .env.local
  */
 
-const LMS_URL =
-  process.env.NEXT_PUBLIC_LMS_URL ?? 'https://data.trustivasetu.com'
-const API_KEY = process.env.NEXT_PUBLIC_LOS_API_KEY ?? ''
+function lmsBaseUrl() {
+  if (typeof window !== 'undefined') return ''
+  return process.env.NEXT_PUBLIC_LMS_URL ?? ''
+}
+
+const API_KEY = process.env.LOS_API_KEY ?? process.env.NEXT_PUBLIC_LOS_API_KEY ?? ''
 
 async function losPost(path: string, data: Record<string, unknown>) {
-  const res = await fetch(`${LMS_URL}${path}`, {
+  if (!API_KEY) {
+    throw new Error('LOS_API_KEY missing — set in Vercel env')
+  }
+  const res = await fetch(`${lmsBaseUrl()}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -17,33 +23,58 @@ async function losPost(path: string, data: Record<string, unknown>) {
     body: JSON.stringify(data),
   })
   const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(json.error ?? `LMS sync failed (${res.status})`)
+  if (!res.ok) throw new Error((json as { error?: string }).error ?? `LMS sync failed (${res.status})`)
   return json
 }
 
-/** Call when "Create Enquiry" / OTP verified / Final Submit */
-export async function syncEnquiryToLMS(leadForm: Record<string, unknown>, extra?: Record<string, unknown>) {
+export async function syncEnquiryToLMS(
+  leadForm: Record<string, unknown>,
+  extra?: Record<string, unknown>
+) {
   return losPost('/api/los/sync/enquiry', {
     ...leadForm,
     ...extra,
-    losEnquiryId: extra?.losEnquiryId ?? `LOS-${leadForm.mobileNumber}-${leadForm.patientName}`,
+    losEnquiryId:
+      extra?.losEnquiryId ??
+      `LOS-${leadForm.mobileNumber}-${String(leadForm.patientName ?? '').replace(/\s/g, '')}`,
   })
 }
 
-/** Call on hospital create OR update (same payload — LMS upserts by externalId) */
 export async function syncClinicToLMS(hospitalData: Record<string, unknown>) {
+  const name = String(hospitalData.fullName ?? hospitalData.name ?? '')
   return losPost('/api/los/sync/clinic', {
-    externalId: hospitalData.externalId ?? hospitalData.hospitalId,
+    externalId:
+      hospitalData.externalId ??
+      `LOS-H-${name.replace(/\s+/g, '').slice(0, 24).toUpperCase()}`,
+    regionCode: hospitalData.regionCode ?? regionCodeFromCity(String(hospitalData.city ?? '')),
     ...hospitalData,
   })
 }
 
-/** Hospital commercial / tariff update from LOS */
 export async function syncCommercialToLMS(data: Record<string, unknown>) {
   return losPost('/api/los/sync/commercial', data)
 }
 
-/** Call on user create OR update (@trustivasetu.com emails) */
 export async function syncUserToLMS(user: Record<string, unknown>) {
   return losPost('/api/los/sync/user', user)
+}
+
+/** Any LOS sidebar tab → LMS DB (leads, credit, collections, lenders, etc.) */
+export async function syncActivityToLMS(
+  activityType: string,
+  data: Record<string, unknown>
+) {
+  return losPost('/api/los/sync/activity', {
+    activityType,
+    ...data,
+    menu: data.menu ?? activityType,
+  })
+}
+
+function regionCodeFromCity(city: string): string {
+  const c = city.toUpperCase()
+  if (c.includes('DELHI') || c.includes('JAIPUR') || c.includes('CHANDIGARH') || c.includes('LUCKNOW')) return 'NORTH'
+  if (c.includes('CHENNAI') || c.includes('HYDERABAD') || c.includes('BANGALORE') || c.includes('KOCHI')) return 'SOUTH'
+  if (c.includes('KOLKATA')) return 'EAST'
+  return 'WEST'
 }

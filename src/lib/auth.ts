@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
       return session
     },
   },
-  pages: { signIn: '/login', error: '/login' },
+  pages: { signIn: '/lms/login', error: '/lms/login' },
   session: { strategy: 'jwt', maxAge: 24 * 60 * 60 },
   secret: process.env.NEXTAUTH_SECRET,
 }

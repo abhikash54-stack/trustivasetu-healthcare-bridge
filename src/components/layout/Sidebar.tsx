@@ -81,7 +81,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         </div>
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={() => signOut({ callbackUrl: '/lms/login' })}
           className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg transition"
         >
           Sign out
