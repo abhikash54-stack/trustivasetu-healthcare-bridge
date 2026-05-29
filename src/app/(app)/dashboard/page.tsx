@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Header } from '@/components/layout/Header'
+
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { LeadsTrendChart, DisbursalComparisonChart } from '@/components/dashboard/LeadsChart'
 import { LenderApprovalChart } from '@/components/dashboard/LenderChart'
@@ -57,7 +57,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Dashboard" subtitle="Business overview and analytics" />
+      
 
       <div className="flex-1 p-6 space-y-5">
         <DashboardFilters filters={filters} onChange={setFilters} showExport onExport={handleExport} />

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Header } from '@/components/layout/Header'
+
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import toast from 'react-hot-toast'
@@ -64,7 +64,7 @@ export default function AdminRegionsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Regions" subtitle="Manage geographic regions for data visibility" />
+      
 
       <div className="flex-1 p-4 sm:p-6 space-y-5">
         <form onSubmit={handleCreate} className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3 items-end">

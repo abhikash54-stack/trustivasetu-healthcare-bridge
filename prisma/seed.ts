@@ -24,16 +24,23 @@ async function main() {
   ])
 
   const pwd = await bcrypt.hash('Admin@123', 12)
-  await db.user.upsert({
-    where: { email: 'admin@trustivasetu.com' },
-    update: {},
-    create: {
-      email: 'admin@trustivasetu.com',
-      password: pwd,
-      name: 'Super Admin',
-      role: UserRole.SUPER_ADMIN,
-    },
-  })
+
+await db.user.upsert({
+  where: { email: 'admin@trustivasetu.com' },
+
+  update: {
+    password: pwd,
+    isActive: true,
+  },
+
+  create: {
+    email: 'admin@trustivasetu.com',
+    password: pwd,
+    name: 'Super Admin',
+    role: UserRole.SUPER_ADMIN,
+    isActive: true,
+  },
+})
 
   console.log('Seed complete (no demo hospitals/leads).')
   console.log('LMS login (until LOS users sync): admin@trustivasetu.com / Admin@123')

@@ -25,8 +25,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
-  const pathname = usePathname()
   const { data: session } = useSession()
+  const pathname = usePathname()
+  
   const role = session?.user?.role ?? ''
   const isAdmin = ADMIN_ROLES.includes(role as (typeof ADMIN_ROLES)[number])
 

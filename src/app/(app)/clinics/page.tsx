@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { Header } from '@/components/layout/Header'
+
 import { ClinicTable } from '@/components/clinics/ClinicTable'
 import { ClinicForm } from '@/components/clinics/ClinicForm'
 import { hasPermission } from '@/lib/permissions'
@@ -50,7 +50,7 @@ export default function ClinicsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Clinics / Centres" subtitle={`${total} onboarded centres`} />
+      
 
       <div className="flex-1 p-6 space-y-4">
         {/* Toolbar */}

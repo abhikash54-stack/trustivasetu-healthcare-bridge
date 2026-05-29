@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Header } from '@/components/layout/Header'
+
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { formatDateTime } from '@/lib/utils'
@@ -50,7 +50,7 @@ export default function AuditLogsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Audit Logs" subtitle="Track all system changes and logins" />
+      
 
       <div className="flex-1 p-4 sm:p-6 space-y-4">
         <div className="flex flex-wrap gap-3">

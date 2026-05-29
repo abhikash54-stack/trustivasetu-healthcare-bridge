@@ -25,18 +25,24 @@ export const authOptions: NextAuthOptions = {
             clinicAssignments: true,
           },
           })
+          console.log('LOGIN EMAIL:', credentials.email)
+
+console.log('FOUND USER:', user)
+
+console.log('DB PASSWORD:', user?.password)
+
+console.log('INPUT PASSWORD:', credentials.password)
         } catch (e) {
           console.error('Database error on login:', e)
-          throw new Error(
-            'Database not ready. In terminal run: npm run db:setup'
-          )
+          throw new Error('Login failed')
         }
 
-        if (!user) throw new Error('Invalid email or password')
-        if (!user.isActive) throw new Error('Account deactivated. Contact your administrator.')
+        if (!user) return null
+if (!user.isActive) throw new Error('Account deactivated')
 
-        const valid = await bcrypt.compare(credentials.password, user.password)
-        if (!valid) throw new Error('Invalid email or password')
+const valid = await bcrypt.compare(credentials.password, user.password)
+console.log('PASSWORD VALID:', valid)
+if (!valid) return null
 
         await db.auditLog.create({
           data: {

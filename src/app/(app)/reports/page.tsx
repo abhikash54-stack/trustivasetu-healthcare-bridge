@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Header } from '@/components/layout/Header'
+
 import { formatLakhs } from '@/lib/utils'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
@@ -40,7 +40,7 @@ export default function ReportsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Performance Reports" subtitle="Month-on-month analytics" />
+      
 
       <div className="flex-1 p-6 space-y-5">
         {/* Tabs + Export */}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Header } from '@/components/layout/Header'
+
 import { LeadTable } from '@/components/leads/LeadTable'
 import { LeadForm } from '@/components/leads/LeadForm'
 import { hasPermission } from '@/lib/permissions'
@@ -80,7 +80,7 @@ export function LeadsPageContent() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Lead Management" subtitle={`${total} total leads`} />
+      
 
       <div className="flex-1 p-6 space-y-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4">

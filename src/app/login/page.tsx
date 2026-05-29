@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -9,29 +10,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (
+  const handleLogin = async (
   e: React.FormEvent
 ) => {
-  e.preventDefault();
+  e.preventDefault()
 
-  if (
-    email === "admin@trustivasetu.com" &&
-    password === "Admin@123"
-  ) {
-    localStorage.setItem(
-      "trustiva-user",
-      JSON.stringify({
-        role: "SUPER_ADMIN",
-        region: "ALL",
-        email,
-      })
-    );
+  const result = await signIn('credentials', {
+    email,
+    password,
+    redirect: false,
+  })
 
-    router.push("/partner");
+  if (result?.error) {
+    alert('Invalid email or password')
   } else {
-    alert("Invalid Credentials");
+    router.push('/dashboard')
+    router.refresh()
   }
-};
+}
+
+  
 
   return (
   <div className="min-h-screen bg-[#07111f] flex items-center justify-center px-4">

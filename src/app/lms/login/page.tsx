@@ -16,13 +16,20 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const result = await signIn('credentials', { email, password, redirect: false })
+      const result = await signIn('credentials', {
+    email,
+    password,
+    redirect: false,
+  })
       if (result?.error) {
-        setError(result.error === 'CredentialsSignin' ? 'Invalid email or password' : result.error)
-      } else {
-        router.push('/dashboard')
-        router.refresh()
-      }
+  setError(
+    result.error === 'CredentialsSignin'
+      ? 'Invalid email or password'
+      : result.error
+  )
+} else {
+  window.location.href = '/dashboard'
+}
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -138,20 +145,10 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            <p className="text-xs text-trustiva-muted text-center mt-6">
-              Data syncs from Trustiva LOS · Admin: admin@trustivasetu.com / Admin@123
-            </p>
-            <p className="text-xs text-center mt-3">
-              <span className="text-trustiva-muted">Production: </span>
-              <a
-                href="https://data.trustivasetu.com/login"
-                className="text-trustiva-lime hover:underline font-medium"
-              >
-                data.trustivasetu.com
-              </a>
-              <span className="text-trustiva-muted"> · DNS pending: analytics.trustivasetu.com</span>
-            </p>
+<p className="text-xs text-trustiva-muted text-center mt-6">
+  Secure access for authorized Trustiva Setu users only.
+</p>
+            
           </div>
 
           <p className="text-center text-[11px] text-slate-500 mt-6">
