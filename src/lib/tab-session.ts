@@ -47,3 +47,11 @@ export async function createTabSessionRecord(userId: string, token: string): Pro
 export async function deleteTabSessionRecord(token: string): Promise<void> {
   await db.tabSession.deleteMany({ where: { token } }).catch(() => {})
 }
+
+export async function isTabSessionActive(token: string): Promise<boolean> {
+  const session = await db.tabSession.findUnique({
+    where: { token },
+    select: { expiresAt: true },
+  })
+  return !!session && session.expiresAt > new Date()
+}

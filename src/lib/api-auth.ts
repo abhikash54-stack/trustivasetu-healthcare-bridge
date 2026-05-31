@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
 import { hasPermission, type Permission } from '@/lib/permissions'
 import { headers } from 'next/headers'
-import { verifyTabToken } from '@/lib/tab-session'
+import { verifyTabToken, isTabSessionActive } from '@/lib/tab-session'
 
 export type SessionUser = {
   id: string
@@ -26,12 +26,14 @@ export type SessionUser = {
 export async function getRequestSession(): Promise<{ user: SessionUser } | null> {
   const headersList = await headers()
 
-  // 1. Direct Bearer token validation (primary path for API calls from browser tabs)
+  // 1. Direct Bearer token validation (primary path for API calls from browser tabs).
+  //    Verify JWT signature first (fast), then confirm the DB record still exists
+  //    so that logged-out tokens are immediately rejected.
   const authHeader = headersList.get('authorization')
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
     const payload = await verifyTabToken(token)
-    if (payload) {
+    if (payload && await isTabSessionActive(token)) {
       return { user: payload as SessionUser }
     }
   }
