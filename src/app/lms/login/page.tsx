@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { storeTabToken } from '@/contexts/TabSessionContext'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -33,9 +34,13 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data.error ?? 'Invalid email or password')
       } else {
+        // Store tab-specific JWT in sessionStorage (powers API auth per tab)
         storeTabToken(data.token)
-        // Dispatch event so TabSessionProvider refreshes immediately
         window.dispatchEvent(new Event('trustiva-session-change'))
+        // Also set NextAuth cookie so middleware allows page navigation.
+        // This cookie is shared across tabs but only used as a navigation gate;
+        // actual user identity for data always comes from the per-tab JWT.
+        await signIn('credentials', { email, password, redirect: false })
         router.push('/dashboard')
       }
     } catch {
