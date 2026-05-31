@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
 import { hasPermission, type Permission } from '@/lib/permissions'
 import { headers } from 'next/headers'
+import { verifyTabToken } from '@/lib/tab-session'
 
 export type SessionUser = {
   id: string
@@ -15,17 +16,28 @@ export type SessionUser = {
 
 /**
  * Reads the current user from either:
- * 1. The x-tab-user header (set by middleware after validating a tab-specific JWT)
- * 2. The NextAuth cookie session (fallback for page navigation / legacy requests)
- *
- * This allows multiple different users to be simultaneously logged in across
- * different browser tabs — each tab carries its own Bearer token in sessionStorage
- * and sends it via the Authorization header on every fetch call.
+ * 1. Authorization: Bearer <jwt> header — validated directly against the JWT secret.
+ *    This is the primary path for all tab-session API calls. API routes are not in
+ *    the middleware matcher, so we validate the token here rather than relying on
+ *    middleware to set x-tab-user.
+ * 2. x-tab-user header — set by middleware for page-route requests that carry a Bearer token.
+ * 3. NextAuth cookie session — fallback for page navigation and legacy flows.
  */
 export async function getRequestSession(): Promise<{ user: SessionUser } | null> {
   const headersList = await headers()
-  const tabUserHeader = headersList.get('x-tab-user')
 
+  // 1. Direct Bearer token validation (primary path for API calls from browser tabs)
+  const authHeader = headersList.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7)
+    const payload = await verifyTabToken(token)
+    if (payload) {
+      return { user: payload as SessionUser }
+    }
+  }
+
+  // 2. x-tab-user header set by middleware (page-route requests with Bearer token)
+  const tabUserHeader = headersList.get('x-tab-user')
   if (tabUserHeader) {
     try {
       const userData = JSON.parse(Buffer.from(tabUserHeader, 'base64').toString('utf-8'))
@@ -33,10 +45,11 @@ export async function getRequestSession(): Promise<{ user: SessionUser } | null>
         return { user: userData as SessionUser }
       }
     } catch {
-      // corrupted header — fall through to NextAuth
+      // corrupted header — fall through
     }
   }
 
+  // 3. NextAuth cookie session (page navigation / legacy)
   return getServerSession(authOptions) as Promise<{ user: SessionUser } | null>
 }
 
