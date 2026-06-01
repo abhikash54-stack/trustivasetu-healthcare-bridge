@@ -1,0 +1,18 @@
+User-agent: *
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /leads/
+Disallow: /clinics/
+Disallow: /reports/
+Disallow: /users/
+Disallow: /admin/
+Disallow: /hr/
+Disallow: /expenses/
+Disallow: /partner/
+Disallow: /lms/
+
+Allow: /privacy-policy
+Allow: /terms
+Allow: /disclaimer
+
+Sitemap: https://app.trustivasetu.com/sitemap.xml

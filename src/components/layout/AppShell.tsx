@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { PermissionsProvider } from '@/contexts/PermissionsContext'
 import { InactivityGuard } from '@/components/InactivityGuard'
 import { CelebrationPopup } from '@/components/hr/CelebrationPopup'
+import { ComplianceFooter } from '@/components/layout/ComplianceFooter'
 import { cn } from '@/lib/utils'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -43,7 +44,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="font-semibold text-gray-900 text-sm">Trustiva Setu LMS</span>
           </div>
 
-          <main className={cn('flex-1 overflow-y-auto')}>{children}</main>
+          <main className={cn('flex-1 overflow-y-auto')}>
+            {children}
+            <ComplianceFooter />
+          </main>
         </div>
       </div>
     </PermissionsProvider>

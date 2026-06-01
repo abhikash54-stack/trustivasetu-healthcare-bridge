@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { sendOtpSms } from '@/lib/sms'
 
 export async function POST(req: NextRequest) {
-  const session = await getRequestSession()
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   const { phone } = await req.json()
+
   if (!phone || !/^\d{10}$/.test(phone)) {
-    return NextResponse.json({ error: 'Valid 10-digit phone required' }, { status: 400 })
+    return NextResponse.json({ error: 'Valid 10-digit phone number required' }, { status: 400 })
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString()
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
 
-  await db.otpToken.deleteMany({ where: { email: phone, purpose: 'PHONE_OTP' } })
+  await db.otpToken.deleteMany({ where: { email: `pub_${phone}`, purpose: 'PUBLIC_PHONE_OTP' } })
   await db.otpToken.create({
-    data: { email: phone, emailOtp: otp, purpose: 'PHONE_OTP', expiresAt },
+    data: { email: `pub_${phone}`, emailOtp: otp, purpose: 'PUBLIC_PHONE_OTP', expiresAt },
   })
 
   const result = await sendOtpSms(phone, otp)
@@ -27,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    message: 'OTP sent',
+    // Only expose raw OTP in non-production for developer convenience
     _devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
   })
 }

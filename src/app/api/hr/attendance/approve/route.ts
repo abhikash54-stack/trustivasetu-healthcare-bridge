@@ -85,21 +85,27 @@ export async function POST(req: NextRequest) {
   return htmlResponse('Rejected', `Attendance for ${record.user.name} on ${dateStr} has been rejected.`, true)
 }
 
-// Admin direct approve/reject via authenticated API
+// Admin or manager direct approve/reject via authenticated API
 export async function PATCH(req: NextRequest) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const isAdmin = session.user.role === 'SUPER_ADMIN' || session.user.role === 'ADMIN'
-  if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const isManager = session.user.role === 'REGIONAL_MANAGER'
+  if (!isAdmin && !isManager) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { attendanceId, action, reason } = await req.json()
   if (!attendanceId || !action) return NextResponse.json({ error: 'attendanceId and action required' }, { status: 400 })
 
   const record = await db.attendance.findUnique({
     where: { id: attendanceId },
-    include: { user: { select: { name: true, email: true } } },
+    include: { user: { select: { name: true, email: true, reportingManagerId: true } } },
   })
   if (!record) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Managers can only approve their direct reports
+  if (isManager && !isAdmin && record.user.reportingManagerId !== session.user.id) {
+    return NextResponse.json({ error: 'You can only approve attendance for your direct reports' }, { status: 403 })
+  }
 
   const status = action === 'approve' ? 'APPROVED' : 'REJECTED'
   const updated = await db.attendance.update({

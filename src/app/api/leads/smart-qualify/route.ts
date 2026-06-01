@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 
-// ── Smart Scoring Engine (No CIBIL hit) ───────────────────────────────────────
+// ── Smart Scoring Engine (preliminary eligibility — lenders may run bureau checks) ──
 interface SmartScore {
   score: number
   grade: 'A' | 'B' | 'C' | 'D'
@@ -40,7 +40,7 @@ interface QualifyRequest {
   aadhaarVerified?: boolean
 }
 
-// ── Smart Score — 6 Alternative Signals (No Bureau) ─────────────────────────
+// ── Smart Score — 6 Alternative Signals (preliminary assessment) ─────────────
 function computeSmartScore(req: QualifyRequest): SmartScore {
   let score = 50
   const signals: string[] = []
@@ -163,8 +163,8 @@ function matchLender(
     tag: '',
     instantApproval: true,
     requiresIncomeProof: false,
-    decisionTime: '< 2 min',
-    message: `No Cost EMI — ₹${emi.toLocaleString('en-IN')}/month for ${p.tenure} months`,
+    decisionTime: 'Quick process',
+    message: `EMI (indicative): ₹${emi.toLocaleString('en-IN')}/month for ${p.tenure} months`,
   }
 }
 
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  // 1. Smart Score (no bureau hit)
+  // 1. Smart Score (preliminary; lenders conduct their own credit assessment)
   const smartScore = computeSmartScore(body)
 
   // 2. Get active lenders
@@ -208,9 +208,9 @@ export async function POST(req: NextRequest) {
   const top3 = validOffers.slice(0, 3).map((offer, i) => ({
     ...offer,
     rank: i + 1,
-    tag: i === 0 ? '⭐ Best Match' :
-         i === 1 ? '💳 Lowest Fee' :
-                   '⚡ Fastest Approval',
+    tag: i === 0 ? 'Best Match' :
+         i === 1 ? 'Lowest Fee' :
+                   'Quick Process',
   }))
 
   const processingTime = Date.now() - startTime
@@ -229,8 +229,8 @@ export async function POST(req: NextRequest) {
     totalEligible: validOffers.length,
     isNoCostEMI: true,
     message: top3.length > 0
-      ? `${top3.length} No Cost EMI offers — processed in ${processingTime}ms!`
-      : 'No offers available — adjust income or loan amount',
+      ? `${top3.length} indicative offers generated. Final terms subject to lender approval.`
+      : 'No indicative offers — try adjusting income or loan amount',
     nextStep: top3.length > 0 ? 'SELECT_OFFER' : 'ENHANCEMENT_REQUIRED',
   })
 }

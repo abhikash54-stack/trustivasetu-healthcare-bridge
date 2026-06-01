@@ -126,9 +126,26 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const month = searchParams.get('month')
   const userId = searchParams.get('userId')
+  const pending = searchParams.get('pending') === 'true'
 
   const isAdmin = session.user.role === 'SUPER_ADMIN' || session.user.role === 'ADMIN'
   const isManager = session.user.role === 'REGIONAL_MANAGER'
+
+  // Pending approvals queue — for managers and admins
+  if (pending) {
+    if (!isAdmin && !isManager) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const pendingRecords = await db.attendance.findMany({
+      where: isAdmin
+        ? { approvalStatus: 'PENDING' }
+        : { approvalStatus: 'PENDING', user: { reportingManagerId: session.user.id } },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        approvedBy: { select: { name: true } },
+      },
+    })
+    return NextResponse.json({ data: pendingRecords })
+  }
 
   let targetUserId = session.user.id
   if (userId) {
@@ -151,14 +168,13 @@ export async function GET(req: NextRequest) {
     include: { approvedBy: { select: { name: true } } },
   })
 
-  // Escalation check: flag PENDING records > 24h for admins
+  // Escalation check: flag PENDING records > 24h for admins and managers
   let pendingEscalations = 0
-  if (isAdmin && !userId) {
+  if ((isAdmin || isManager) && !userId) {
     pendingEscalations = await db.attendance.count({
-      where: {
-        approvalStatus: 'PENDING',
-        createdAt: { lt: new Date(Date.now() - 24 * 3600 * 1000) },
-      },
+      where: isAdmin
+        ? { approvalStatus: 'PENDING', createdAt: { lt: new Date(Date.now() - 24 * 3600 * 1000) } }
+        : { approvalStatus: 'PENDING', user: { reportingManagerId: session.user.id }, createdAt: { lt: new Date(Date.now() - 24 * 3600 * 1000) } },
     })
   }
 

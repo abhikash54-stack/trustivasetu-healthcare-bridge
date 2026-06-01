@@ -180,7 +180,14 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-[11px] text-slate-500 mt-6">
-            Desktop: split view · Mobile: stacked layout
+            &copy; 2024 Trustiva Setu. Authorized personnel only.
+          </p>
+          <p className="text-center text-[11px] text-slate-600 mt-2 space-x-3">
+            <a href="/privacy-policy" className="hover:text-slate-400 underline">Privacy Policy</a>
+            <span className="text-slate-700">·</span>
+            <a href="/terms" className="hover:text-slate-400 underline">Terms</a>
+            <span className="text-slate-700">·</span>
+            <a href="/disclaimer" className="hover:text-slate-400 underline">Disclaimer</a>
           </p>
         </div>
       </section>

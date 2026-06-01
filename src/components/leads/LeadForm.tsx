@@ -105,6 +105,9 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
   const [totalLenders, setTotalLenders] = useState(0)
   const [totalEligible, setTotalEligible] = useState(0)
 
+  // Consent
+  const [consentGiven, setConsentGiven] = useState(false)
+
   // Enhancement
   const [wantsEnhancement, setWantsEnhancement] = useState(false)
   const [aaConsentGiven, setAaConsentGiven] = useState(false)
@@ -321,10 +324,32 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
             placeholder="10-digit mobile number" maxLength={10} required />
           <Field label="Mother Name" value={motherName} onChange={setMotherName} placeholder="Mother's full name" />
           <Field label="Email" value={email} onChange={setEmail} placeholder="patient@email.com" type="email" />
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consentGiven}
+                onChange={e => setConsentGiven(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-gray-400 text-blue-600 shrink-0"
+              />
+              <span className="text-xs text-gray-700 leading-relaxed">
+                I confirm that the applicant has consented to share their personal data (including identity
+                documents and financial details) with Trustiva Setu and its partner lenders for the purpose
+                of processing a loan application. I have explained the{' '}
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Privacy Policy</a>
+                {' '}and{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Terms &amp; Conditions</a>
+                {' '}to the applicant. <span className="text-red-600 font-medium">*</span>
+              </span>
+            </label>
+          </div>
           <NavBtn
             onNext={() => {
               if (!applicantName || phone.length < 10) {
                 toast.error('Name and 10-digit phone number are required'); return
+              }
+              if (!consentGiven) {
+                toast.error('Patient consent is required before proceeding'); return
               }
               setStep(2)
             }}

@@ -45,6 +45,9 @@ export async function sendEmail({ to, subject, html }: { to: string | string[]; 
   const transporter = createTransport()
   const toList = Array.isArray(to) ? to.join(', ') : to
   if (!transporter) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`[EMAIL] SMTP not configured — set SMTP_HOST, SMTP_USER, SMTP_PASS. Failed to send to: ${toList}`)
+    }
     console.log(`[EMAIL - no SMTP configured] To: ${toList} | Subject: ${subject}`)
     return { success: true, dev: true }
   }

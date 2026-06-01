@@ -64,9 +64,22 @@ const LEAVE_LABELS: Record<string, string> = {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
+interface PendingRecord {
+  id: string
+  userId: string
+  date: string
+  attendanceType: 'PRESENT' | 'LEAVE' | 'OUTSTATION'
+  leaveType: 'PL' | 'CL' | 'MEDICAL' | 'UNPLANNED' | null
+  workingType: 'FULL_DAY' | 'HALF_DAY'
+  outstationCity: string | null
+  notes: string | null
+  user: { id: string; name: string; email: string }
+}
+
 export default function AttendancePage() {
   const { user: session } = useTabSession()
   const isAdmin = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN'
+  const isManager = session?.role === 'REGIONAL_MANAGER'
 
   const now = new Date()
   const todayStr = format(now, 'yyyy-MM-dd')
@@ -77,6 +90,10 @@ export default function AttendancePage() {
   const [holidays, setHolidays] = useState<Holiday[]>([])
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
+
+  // Pending approvals for admins and managers
+  const [pendingRecords, setPendingRecords] = useState<PendingRecord[]>([])
+  const [approvingId, setApprovingId] = useState<string | null>(null)
 
   // Modal state
   const [showPunch, setShowPunch] = useState(false)
@@ -108,6 +125,13 @@ export default function AttendancePage() {
 
   const monthKey = `${viewDate.year}-${String(viewDate.month).padStart(2, '0')}`
 
+  const fetchPending = useCallback(async () => {
+    if (!isAdmin && !isManager) return
+    const res = await fetch('/api/hr/attendance?pending=true')
+    const data = await res.json()
+    setPendingRecords(data.data ?? [])
+  }, [isAdmin, isManager])
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     const [attRes, holRes] = await Promise.all([
@@ -121,6 +145,7 @@ export default function AttendancePage() {
   }, [monthKey, viewDate.year])
 
   useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { fetchPending() }, [fetchPending])
 
   const holidayDates = new Set(holidays.map(h => h.date.split('T')[0]))
   const recordMap = new Map(records.map(r => [r.date.split('T')[0], r]))
@@ -220,6 +245,30 @@ export default function AttendancePage() {
       toast.error(`${failed} day(s) failed — some may be locked after approval`)
     }
     setSubmittingLeave(false)
+  }
+
+  // ── Approve / reject team attendance ─────────────────────────────────────────
+
+  async function handleApprove(attendanceId: string, action: 'approve' | 'reject', reason?: string) {
+    setApprovingId(attendanceId)
+    try {
+      const res = await fetch('/api/hr/attendance/approve', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attendanceId, action, reason }),
+      })
+      if (res.ok) {
+        toast.success(action === 'approve' ? 'Attendance approved' : 'Attendance rejected')
+        fetchPending()
+      } else {
+        const d = await res.json()
+        toast.error(d.error ?? 'Action failed')
+      }
+    } catch {
+      toast.error('Network error')
+    } finally {
+      setApprovingId(null)
+    }
   }
 
   // ── Excel download ────────────────────────────────────────────────────────────
@@ -497,6 +546,67 @@ export default function AttendancePage() {
           ))}
         </div>
       </div>
+
+      {/* ── Pending Approvals Panel (admins and managers) ─────────────────────── */}
+      {(isAdmin || isManager) && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-bold text-gray-800">Pending Approvals</p>
+              {pendingRecords.length > 0 && (
+                <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                  {pendingRecords.length}
+                </span>
+              )}
+            </div>
+          </div>
+          {pendingRecords.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm text-gray-400">
+              No pending approvals
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {pendingRecords.map(rec => {
+                const dateStr = format(new Date(rec.date), 'dd MMM yyyy')
+                const typeLabel = rec.attendanceType === 'LEAVE'
+                  ? `${LEAVE_LABELS[rec.leaveType ?? ''] ?? 'Leave'}`
+                  : rec.attendanceType === 'OUTSTATION'
+                  ? `Outstation${rec.outstationCity ? ` — ${rec.outstationCity}` : ''}`
+                  : rec.workingType === 'HALF_DAY' ? 'Present — Half Day' : 'Present — Full Day'
+                const isProcessing = approvingId === rec.id
+                return (
+                  <div key={rec.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{rec.user.name}</p>
+                      <p className="text-xs text-gray-500">{dateStr} · {typeLabel}</p>
+                      {rec.notes && <p className="text-xs text-gray-400 truncate mt-0.5">{rec.notes}</p>}
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        onClick={() => handleApprove(rec.id, 'approve')}
+                        disabled={isProcessing}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition disabled:opacity-50"
+                      >
+                        {isProcessing ? '...' : 'Approve'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          const reason = window.prompt(`Reason for rejecting ${rec.user.name}'s attendance on ${dateStr} (optional):`) ?? ''
+                          handleApprove(rec.id, 'reject', reason)
+                        }}
+                        disabled={isProcessing}
+                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-lg border border-red-200 transition disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Punch Attendance Modal ───────────────────────────────────────────── */}
       {showPunch && (

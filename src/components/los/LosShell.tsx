@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { SIDEBAR_ITEMS, SIDEBAR_SECTIONS } from '@/lib/los/constants'
 import { LmsSyncBanner } from '@/components/LmsSyncBanner'
+import { ComplianceFooter } from '@/components/layout/ComplianceFooter'
 import { useLos } from './LosProvider'
 
 export function LosShell() {
@@ -81,9 +82,11 @@ export function LosShell() {
           })}
         </div>
       </aside>
-      <main className="flex-1 p-5 overflow-y-auto max-h-screen">
-        {/* Pass selected menu via clone - use context simpler */}
-        <MenuRouter menu={selectedMenu} />
+      <main className="flex-1 overflow-y-auto max-h-screen flex flex-col">
+        <div className="flex-1 p-5">
+          <MenuRouter menu={selectedMenu} />
+        </div>
+        <ComplianceFooter dark />
       </main>
     </div>
   )

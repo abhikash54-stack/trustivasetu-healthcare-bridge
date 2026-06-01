@@ -359,7 +359,7 @@ model OtpToken {
   verified     Boolean   @default(false)
   createdAt    DateTime  @default(now())
 
-  @@index([email])
+  @@index([email, purpose])
 }
 
 model Holiday {

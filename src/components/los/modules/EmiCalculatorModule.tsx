@@ -99,24 +99,32 @@ export function EmiCalculatorModule() {
         </div>
       </div>
       {result && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-lime-300/10 border border-lime-300/30 p-4 rounded-xl">
-            <p className="text-xs text-gray-400">Monthly EMI</p>
-            <p className="text-xl font-bold">₹{result.monthlyEmi.toLocaleString()}</p>
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-lime-300/10 border border-lime-300/30 p-4 rounded-xl">
+              <p className="text-xs text-gray-400">Monthly EMI</p>
+              <p className="text-xl font-bold">₹{result.monthlyEmi.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+              <p className="text-xs text-gray-400">Upfront</p>
+              <p className="text-xl font-bold">₹{result.upfront.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+              <p className="text-xs text-gray-400">Total payable</p>
+              <p className="text-xl font-bold">₹{result.totalPayable.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+              <p className="text-xs text-gray-400">Net disbursal</p>
+              <p className="text-xl font-bold">₹{result.netDisbursal.toLocaleString()}</p>
+            </div>
           </div>
-          <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-            <p className="text-xs text-gray-400">Upfront</p>
-            <p className="text-xl font-bold">₹{result.upfront.toLocaleString()}</p>
-          </div>
-          <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-            <p className="text-xs text-gray-400">Total payable</p>
-            <p className="text-xl font-bold">₹{result.totalPayable.toLocaleString()}</p>
-          </div>
-          <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-            <p className="text-xs text-gray-400">Net disbursal</p>
-            <p className="text-xl font-bold">₹{result.netDisbursal.toLocaleString()}</p>
-          </div>
-        </div>
+          <p className="text-[11px] text-white/40 leading-relaxed border border-white/10 rounded-lg px-3 py-2">
+            <strong className="text-white/60">Disclaimer:</strong> EMI amounts shown are indicative only.
+            Actual EMI may vary based on lender terms, processing fees, applicable taxes, and other charges
+            determined at the time of final lender sanction. This estimate does not constitute a loan offer
+            or guarantee of approval.
+          </p>
+        </>
       )}
     </div>
   )

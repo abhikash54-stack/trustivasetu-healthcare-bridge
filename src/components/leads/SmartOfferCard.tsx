@@ -60,16 +60,19 @@ export function SmartOfferCard({ offer, selected, onSelect }: Props) {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl px-3 py-2 mb-3 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl px-3 py-2 mb-1 flex items-center justify-between">
         <div>
-          <p className="text-white font-bold text-sm">✨ No Cost EMI</p>
-          <p className="text-green-100 text-xs">0% Interest — Subvention Model</p>
+          <p className="text-white font-bold text-sm">No Cost EMI</p>
+          <p className="text-green-100 text-xs">0% interest to patient (subvention — terms apply)</p>
         </div>
         <div className="text-right">
           <p className="text-white font-bold text-lg">₹{offer.emi.toLocaleString('en-IN')}</p>
           <p className="text-green-100 text-xs">/month</p>
         </div>
       </div>
+      <p className="text-[10px] text-gray-400 mb-3 px-1">
+        EMI is indicative. 0% interest subject to clinic subvention arrangement with lender. Final terms per lender sanction letter.
+      </p>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="bg-gray-50 rounded-xl p-2 text-center">
@@ -92,7 +95,7 @@ export function SmartOfferCard({ offer, selected, onSelect }: Props) {
           </span>
           {offer.instantApproval && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-              ⚡ Instant
+              Quick Process
             </span>
           )}
         </div>
