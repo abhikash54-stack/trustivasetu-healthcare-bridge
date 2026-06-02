@@ -175,6 +175,8 @@ function Chatbot({ initialClinicId }: { initialClinicId: string | null }) {
   const [quickOptions, setQuickOptions] = useState<string[] | null>(null)
   const [refId, setRefId] = useState('')
   const [otpSending, setOtpSending] = useState(false)
+  const [otpFailures, setOtpFailures] = useState(0)
+  const [showRestartOption, setShowRestartOption] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -270,19 +272,49 @@ function Chatbot({ initialClinicId }: { initialClinicId: string | null }) {
       })
       const json = await res.json()
       if (json.verified) {
+        setOtpFailures(0)
+        setShowRestartOption(false)
         botSay(t.otpOk, { delay: 300 })
         setTimeout(() => {
           setStep('EMAIL')
           botSay(t.askEmail)
         }, 900)
       } else {
+        const failures = otpFailures + 1
+        setOtpFailures(failures)
         botSay(json.message ?? t.otpFail)
+        if (failures >= 3 || (json.message ?? '').toLowerCase().includes('too many')) {
+          setShowRestartOption(true)
+          botSay('Having trouble? You can start a new application below.', { delay: 800 })
+        }
       }
     } catch {
       botSay(t.error)
     } finally {
       setLoading(false)
     }
+  }
+
+  function resetToNewApplication() {
+    setData(d => ({ ...d, name: '', phone: '', email: '', dob: '', amount: '', purpose: '', employment: '', income: '', existingEmi: '', pan: '', aadhaar: '' }))
+    setStep('NAME')
+    setInput('')
+    setOtpFailures(0)
+    setShowRestartOption(false)
+    setRefId('')
+    setQuickOptions(null)
+    setMessages([{ role: 'bot', text: `Starting a new application for ${data.clinicName}. ${T[lang].askName}` }])
+    scrollBottom()
+  }
+
+  function continueWithChanges() {
+    setStep('NAME')
+    setInput('')
+    setOtpFailures(0)
+    setShowRestartOption(false)
+    setQuickOptions(null)
+    botSay('Let\'s update your details. ' + T[lang].askName, { delay: 200 })
+    scrollBottom()
   }
 
   async function submitLead() {
@@ -526,14 +558,25 @@ function Chatbot({ initialClinicId }: { initialClinicId: string | null }) {
       {!isDone && (
         <div className="bg-[#f0f0f0] px-3 py-3 shrink-0">
           {step === 'OTP' && (
-            <button
-              type="button"
-              onClick={() => { userSay('resend'); setTimeout(() => sendOtp(data.phone), 300) }}
-              disabled={otpSending}
-              className="w-full text-center text-xs text-blue-600 mb-2 hover:underline disabled:opacity-50"
-            >
-              {t.resend}
-            </button>
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => { userSay('resend'); setTimeout(() => sendOtp(data.phone), 300) }}
+                disabled={otpSending}
+                className="flex-1 text-center text-xs text-blue-600 hover:underline disabled:opacity-50"
+              >
+                {t.resend}
+              </button>
+              {showRestartOption && (
+                <button
+                  type="button"
+                  onClick={resetToNewApplication}
+                  className="flex-1 text-center text-xs text-red-500 hover:underline font-medium"
+                >
+                  Start New Application
+                </button>
+              )}
+            </div>
           )}
           <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-gray-200">
             {(step === 'EMAIL' || step === 'PAN' || step === 'AADHAAR') && (
@@ -580,6 +623,22 @@ function Chatbot({ initialClinicId }: { initialClinicId: string | null }) {
           <p className="text-xs text-gray-400 mt-2 leading-relaxed">
             Trustiva Setu is a loan facilitation platform. Loans by partner banks/NBFCs. Approval at lender&apos;s discretion.
           </p>
+          <div className="flex gap-2 mt-3">
+            <button
+              type="button"
+              onClick={continueWithChanges}
+              className="flex-1 py-2 text-xs font-medium text-[#07111f] bg-[#bef264] rounded-full hover:bg-[#a3cc52] transition"
+            >
+              Continue / Make Changes
+            </button>
+            <button
+              type="button"
+              onClick={resetToNewApplication}
+              className="flex-1 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 transition"
+            >
+              Start New Application
+            </button>
+          </div>
         </div>
       )}
     </div>
