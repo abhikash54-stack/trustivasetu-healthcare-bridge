@@ -17,6 +17,7 @@ interface NavItem {
   roles: string[]
   panel?: 'admin' | 'hr'
   module?: ModuleKey
+  hasBadge?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -25,16 +26,18 @@ const navItems: NavItem[] = [
   { href: '/leads',      label: 'Leads',             icon: IconLeads,     roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'LEADS' },
   { href: '/clinics',    label: 'Clinics / Centres', icon: IconClinic,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'CLINICS' },
   { href: '/reports',    label: 'Reports',           icon: IconReports,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'REPORTS' },
+  { href: '/dashboard/approvals', label: 'Approvals', icon: IconApprovals, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER'], hasBadge: true },
   // HR — module key used for permissions filtering
-  { href: '/hr/my-profile',  label: 'My Profile',         icon: IconProfile,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
-  { href: '/hr/attendance',  label: 'Attendance',         icon: IconCalendar,  roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'ATTENDANCE' },
-  { href: '/expenses',       label: 'Expenses',           icon: IconExpense,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'EXPENSES' },
-  { href: '/hr/payslip',     label: 'Payslip',            icon: IconPayslip,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'DOCUMENTS' },
-  { href: '/hr/policies',    label: 'HR Policies',        icon: IconPolicies,  roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'HR_POLICIES' },
-  { href: '/hr/directory',   label: 'Employee Directory', icon: IconDirectory, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'DIRECTORY' },
-  { href: '/hr',             label: 'HR Dashboard',       icon: IconHR,        roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr', module: 'HR_MODULE' },
-  { href: '/hr/salary',      label: 'Salary Management',  icon: IconSalary,    roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr', module: 'SALARY' },
-  { href: '/hr/holidays',    label: 'Holiday Calendar',   icon: IconHoliday,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'HR_POLICIES' },
+  { href: '/hr/my-profile',            label: 'My Profile',         icon: IconProfile,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
+  { href: '/dashboard/my/attendance',  label: 'My Attendance',      icon: IconCalendar,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'ATTENDANCE' },
+  { href: '/dashboard/my/leaves',      label: 'My Leaves',          icon: IconLeave,      roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
+  { href: '/expenses',                 label: 'My Expenses',        icon: IconExpense,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'EXPENSES' },
+  { href: '/hr/payslip',               label: 'Payslip',            icon: IconPayslip,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'DOCUMENTS' },
+  { href: '/hr/policies',              label: 'HR Policies',        icon: IconPolicies,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'HR_POLICIES' },
+  { href: '/hr/directory',             label: 'Employee Directory', icon: IconDirectory,  roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'DIRECTORY' },
+  { href: '/hr',                       label: 'HR Dashboard',       icon: IconHR,         roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr', module: 'HR_MODULE' },
+  { href: '/hr/salary',                label: 'Salary Management',  icon: IconSalary,     roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr', module: 'SALARY' },
+  { href: '/hr/holidays',              label: 'Holiday Calendar',   icon: IconHoliday,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'HR_POLICIES' },
   // Administration
   { href: '/admin/appointment-letters', label: 'Appointment Letters', icon: IconLetter,  roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'APPOINTMENT_LETTERS' },
   { href: '/users',              label: 'User Management', icon: IconUsers,  roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'USERS' },
@@ -57,6 +60,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const { can } = usePermissions()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [pendingApprovals, setPendingApprovals] = useState(0)
   const navRef = useRef<HTMLElement>(null)
   const savedScroll = useRef(0)
 
@@ -69,6 +73,24 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     if (!session?.id) return
     fetch('/api/hr/photo').then(r => r.json()).then(d => setPhotoUrl(d.photoUrl ?? null)).catch(() => {})
   }, [session?.id])
+
+  // Fetch pending approvals count for manager/admin roles
+  useEffect(() => {
+    if (!session?.role) return
+    if (!['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER'].includes(session.role)) return
+    fetch('/api/approvals/pending-count')
+      .then(r => r.json())
+      .then(d => setPendingApprovals(d.count ?? 0))
+      .catch(() => {})
+    // Refresh every 60 seconds
+    const interval = setInterval(() => {
+      fetch('/api/approvals/pending-count')
+        .then(r => r.json())
+        .then(d => setPendingApprovals(d.count ?? 0))
+        .catch(() => {})
+    }, 60_000)
+    return () => clearInterval(interval)
+  }, [session?.role])
 
   // Persist scroll position across navigations
   useEffect(() => {
@@ -125,7 +147,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         className="flex-1 min-h-0 overflow-y-scroll px-2 py-3 space-y-0.5"
         style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent' }}
       >
-        <NavSection items={mainNav} pathname={pathname} onNavigate={onClose} />
+        <NavSection items={mainNav} pathname={pathname} onNavigate={onClose} pendingApprovals={pendingApprovals} />
 
         {hrNav.length > 0 && (
           <div className="pt-3">
@@ -199,15 +221,18 @@ function NavSection({
   items,
   pathname,
   onNavigate,
+  pendingApprovals = 0,
 }: {
   items: NavItem[]
   pathname: string
   onNavigate?: () => void
+  pendingApprovals?: number
 }) {
   return (
     <div className="space-y-0.5">
       {items.map(item => {
         const active = pathname === item.href || pathname.startsWith(item.href + '/')
+        const badge = item.hasBadge ? pendingApprovals : 0
         return (
           <Link
             key={item.href}
@@ -221,7 +246,15 @@ function NavSection({
             )}
           >
             <item.icon className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{item.label}</span>
+            <span className="truncate flex-1">{item.label}</span>
+            {badge > 0 && (
+              <span className={cn(
+                'text-[10px] font-bold min-w-[16px] h-4 rounded-full px-1 flex items-center justify-center flex-shrink-0',
+                active ? 'bg-trustiva-navy/20 text-trustiva-navy' : 'bg-red-500 text-white'
+              )}>
+                {badge > 99 ? '99+' : badge}
+              </span>
+            )}
           </Link>
         )
       })}
@@ -372,6 +405,22 @@ function IconHoliday({ className }: { className?: string }) {
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+    </svg>
+  )
+}
+function IconApprovals({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  )
+}
+function IconLeave({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
     </svg>
   )
 }

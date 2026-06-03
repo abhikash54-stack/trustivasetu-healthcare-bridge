@@ -42,6 +42,7 @@ export function LeadsPageContent() {
   const role = session?.role ?? ''
   const canCreate = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'].includes(role)
   const canEdit = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER'].includes(role)
+  const canDelete = ['SUPER_ADMIN', 'ADMIN'].includes(role)
 
   const fetchLeads = useCallback(async () => {
     setLoading(true)
@@ -90,6 +91,18 @@ export function LeadsPageContent() {
     } else {
       const d = await res.json()
       toast.error(d.error ?? 'Update failed')
+    }
+  }
+
+  async function handleDelete(lead: { id: string; applicantName: string }) {
+    if (!confirm(`Delete lead for "${lead.applicantName}"? This cannot be undone.`)) return
+    const res = await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      toast.success('Lead deleted')
+      fetchLeads()
+    } else {
+      const d = await res.json()
+      toast.error(d.error ?? 'Failed to delete lead')
     }
   }
 
@@ -269,7 +282,9 @@ export function LeadsPageContent() {
             leads={leads as Parameters<typeof LeadTable>[0]['leads']}
             onEdit={canEdit ? (l) => { setEditLead(l); setShowForm(true) } : undefined}
             onStatusUpdate={canEdit ? (handleStatusUpdate as unknown as Parameters<typeof LeadTable>[0]['onStatusUpdate']) : undefined}
+            onDelete={canDelete ? (handleDelete as unknown as Parameters<typeof LeadTable>[0]['onDelete']) : undefined}
             canEdit={!!canEdit}
+            canDelete={!!canDelete}
           />
         )}
 

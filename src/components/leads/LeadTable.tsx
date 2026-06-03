@@ -24,10 +24,12 @@ interface Props {
   leads: Lead[]
   onEdit?: (lead: Lead) => void
   onStatusUpdate?: (lead: Lead, status: string) => void
+  onDelete?: (lead: Lead) => void
   canEdit?: boolean
+  canDelete?: boolean
 }
 
-export function LeadTable({ leads, onEdit, onStatusUpdate, canEdit }: Props) {
+export function LeadTable({ leads, onEdit, onStatusUpdate, onDelete, canEdit, canDelete }: Props) {
   if (leads.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
@@ -91,6 +93,12 @@ export function LeadTable({ leads, onEdit, onStatusUpdate, canEdit }: Props) {
                           <button onClick={() => onStatusUpdate(lead, 'REJECTED')}
                             className="text-xs text-red-500 hover:text-red-700 font-medium">Reject</button>
                         </>
+                      )}
+                      {canDelete && onDelete && (
+                        <button onClick={() => onDelete(lead)}
+                          className="text-xs text-red-500 hover:text-red-700 font-medium border-l border-gray-200 pl-2 ml-1">
+                          Delete
+                        </button>
                       )}
                     </div>
                   )}

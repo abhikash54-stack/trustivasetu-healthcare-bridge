@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
+import { useTabSession } from '@/contexts/TabSessionContext'
 
 interface LenderConfig {
   apiUrl?: string
@@ -43,6 +44,8 @@ const EMPTY_CONFIG: LenderConfig = {
 }
 
 export default function AdminLendersPage() {
+  const { user: session } = useTabSession()
+  const isSuperAdmin = session?.role === 'SUPER_ADMIN'
   const [lenders, setLenders] = useState<Lender[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -92,6 +95,13 @@ export default function AdminLendersPage() {
     setAgreementFile(null)
     setActiveTab('agreement')
     setShowForm(true)
+  }
+
+  async function handleDelete(l: Lender) {
+    if (!confirm(`Permanently delete lender "${l.name}"? This removes them from all lender lists.`)) return
+    const res = await fetch(`/api/lenders/${l.id}`, { method: 'DELETE' })
+    if (res.ok) { toast.success('Lender deleted'); fetchLenders() }
+    else toast.error('Failed to delete lender')
   }
 
   async function toggleActive(l: Lender) {
@@ -302,6 +312,12 @@ export default function AdminLendersPage() {
                             className={`text-xs font-medium ${l.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'}`}>
                             {l.isActive ? 'Deactivate' : 'Activate'}
                           </button>
+                          {isSuperAdmin && (
+                            <button onClick={() => handleDelete(l)}
+                              className="text-xs text-red-600 hover:text-red-800 font-medium border-l border-gray-200 pl-2">
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

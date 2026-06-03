@@ -26,9 +26,11 @@ interface Clinic {
 interface Props {
   clinics: Clinic[]
   onEdit?: (clinic: Clinic) => void
+  onDelete?: (clinic: Clinic) => void
+  canDelete?: boolean
 }
 
-export function ClinicTable({ clinics, onEdit }: Props) {
+export function ClinicTable({ clinics, onEdit, onDelete, canDelete }: Props) {
   if (clinics.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
@@ -82,6 +84,10 @@ export function ClinicTable({ clinics, onEdit }: Props) {
                     {onEdit && (
                       <button onClick={() => onEdit(clinic)}
                         className="text-xs text-gray-500 hover:text-gray-700 font-medium">Edit</button>
+                    )}
+                    {canDelete && onDelete && (
+                      <button onClick={() => onDelete(clinic)}
+                        className="text-xs text-red-500 hover:text-red-700 font-medium">Delete</button>
                     )}
                   </div>
                 </td>

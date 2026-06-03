@@ -7,6 +7,7 @@ import { ClinicTable } from '@/components/clinics/ClinicTable'
 import { ClinicForm } from '@/components/clinics/ClinicForm'
 import { ClinicBulkUpload } from '@/components/clinics/ClinicBulkUpload'
 import { hasPermission } from '@/lib/permissions'
+import toast from 'react-hot-toast'
 
 export default function ClinicsPage() {
   const { user: session } = useTabSession()
@@ -22,6 +23,7 @@ export default function ClinicsPage() {
   const [editClinic, setEditClinic] = useState<unknown>(null)
 
   const canCreate = session && hasPermission(session?.role, 'CLINIC_CREATE')
+  const canDelete = session && hasPermission(session?.role, 'CLINIC_DELETE')
 
   useEffect(() => {
     fetch('/api/regions').then(r => r.json()).then(d => setRegions(d.data ?? []))
@@ -40,6 +42,17 @@ export default function ClinicsPage() {
   }, [page, search, regionId])
 
   useEffect(() => { fetchClinics() }, [fetchClinics])
+
+  async function handleDelete(clinic: { id: string; name: string }) {
+    if (!confirm(`Deactivate clinic "${clinic.name}"? It will be hidden from the system.`)) return
+    const res = await fetch(`/api/clinics/${clinic.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      toast.success('Clinic deactivated')
+      fetchClinics()
+    } else {
+      toast.error('Failed to deactivate clinic')
+    }
+  }
 
   async function handleExport() {
     const params = new URLSearchParams({ type: 'clinics' })
@@ -162,6 +175,8 @@ export default function ClinicsPage() {
           <ClinicTable
             clinics={clinics as Parameters<typeof ClinicTable>[0]['clinics']}
             onEdit={canCreate ? (c) => { setEditClinic(c); setShowForm(true) } : undefined}
+            onDelete={canDelete ? (handleDelete as unknown as Parameters<typeof ClinicTable>[0]['onDelete']) : undefined}
+            canDelete={!!canDelete}
           />
         )}
 
