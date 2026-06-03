@@ -17,9 +17,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ verified: false, message: 'Invalid PAN format' })
   }
 
-  // TODO: Real PAN verify via Setu/Karza/SignDesk
-  // For now — mock verify (format check only)
-  console.log(`[PAN Verify] PAN: ${pan}, Name: ${name}`)
+  // TODO: Real PAN verify via Setu/Karza/SignDesk — currently format-check only
 
   return NextResponse.json({
     verified: true,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { sendOtpSms } from '@/lib/sms'
+import { checkOtpSendRateLimit } from '@/lib/rate-limit'
 
 const isBypass = () =>
   process.env.NODE_ENV !== 'production' || process.env.ENABLE_OTP_BYPASS === 'true'
@@ -10,6 +11,14 @@ export async function POST(req: NextRequest) {
 
   if (!phone || !/^\d{10}$/.test(phone)) {
     return NextResponse.json({ error: 'Valid 10-digit phone number required' }, { status: 400 })
+  }
+
+  const rateLimit = await checkOtpSendRateLimit(phone)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many OTP requests. Please wait 5 minutes before trying again.' },
+      { status: 429 },
+    )
   }
 
   // When bypass is active, always use 123456 so verify step can find it in DB

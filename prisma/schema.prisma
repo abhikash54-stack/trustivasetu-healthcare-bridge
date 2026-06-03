@@ -160,8 +160,10 @@ model Lead {
 
   @@index([clinicId])
   @@index([lenderId])
+  @@index([createdById])
   @@index([status])
   @@index([applicationDate])
+  @@index([createdAt])
   @@index([nachStatus])
   @@index([agreementSigned])
 }
@@ -199,6 +201,7 @@ model AuditLog {
   @@index([userId])
   @@index([entity])
   @@index([createdAt])
+  @@index([entity, action, entityId, createdAt])
 }
 
 model Notification {
@@ -214,6 +217,7 @@ model Notification {
 
   @@index([userId])
   @@index([isRead])
+  @@index([createdAt])
 }
 
 model WebhookEvent {
@@ -360,6 +364,8 @@ model OtpToken {
   createdAt    DateTime  @default(now())
 
   @@index([email, purpose])
+  @@index([expiresAt])
+  @@index([verified])
 }
 
 model Holiday {

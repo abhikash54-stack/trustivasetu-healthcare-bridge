@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { signTabToken, createTabSessionRecord } from '@/lib/tab-session'
+import { checkLoginRateLimit, recordFailedLogin } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,8 +12,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
+    const normalizedEmail = email.toLowerCase().trim()
+
+    const rateLimit = await checkLoginRateLimit(normalizedEmail)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: `Too many failed attempts. Try again in ${Math.ceil((rateLimit.retryAfterSeconds ?? 900) / 60)} minutes.` },
+        { status: 429 },
+      )
+    }
+
     const user = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
       include: {
         regionAssignments: true,
         clinicAssignments: true,
@@ -20,6 +31,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!user) {
+      await recordFailedLogin(normalizedEmail)
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
     if (!user.isActive) {
@@ -28,6 +40,7 @@ export async function POST(req: NextRequest) {
 
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
+      await recordFailedLogin(normalizedEmail)
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 

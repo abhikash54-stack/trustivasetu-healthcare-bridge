@@ -16,17 +16,18 @@ export type SessionUser = {
 
 /**
  * Reads the current user from either:
- * 1. Authorization: Bearer <jwt> header — validated directly against the JWT secret.
- *    This is the primary path for all tab-session API calls. API routes are not in
- *    the middleware matcher, so we validate the token here rather than relying on
- *    middleware to set x-tab-user.
- * 2. x-tab-user header — set by middleware for page-route requests that carry a Bearer token.
- * 3. NextAuth cookie session — fallback for page navigation and legacy flows.
+ * 1. Authorization: Bearer <jwt> header — validated cryptographically against the JWT secret
+ *    and confirmed active in the DB. Primary path for all API calls.
+ * 2. NextAuth cookie session — fallback for page navigation and server components.
+ *
+ * NOTE: The x-tab-user header (set by middleware for page routes) is intentionally NOT
+ * trusted here. Any client can send arbitrary x-tab-user values; trusting it without
+ * re-verification would be an authentication bypass. Page routes fall through to path 2.
  */
 export async function getRequestSession(): Promise<{ user: SessionUser } | null> {
   const headersList = await headers()
 
-  // 1. Direct Bearer token validation (primary path for API calls from browser tabs).
+  // 1. Direct Bearer token validation (primary path for all tab-session API calls).
   //    Verify JWT signature first (fast), then confirm the DB record still exists
   //    so that logged-out tokens are immediately rejected.
   const authHeader = headersList.get('authorization')
@@ -36,22 +37,11 @@ export async function getRequestSession(): Promise<{ user: SessionUser } | null>
     if (payload && await isTabSessionActive(token)) {
       return { user: payload as SessionUser }
     }
+    // Bearer token present but invalid/expired — reject immediately, don't fall through.
+    return null
   }
 
-  // 2. x-tab-user header set by middleware (page-route requests with Bearer token)
-  const tabUserHeader = headersList.get('x-tab-user')
-  if (tabUserHeader) {
-    try {
-      const userData = JSON.parse(Buffer.from(tabUserHeader, 'base64').toString('utf-8'))
-      if (userData?.id && userData?.role) {
-        return { user: userData as SessionUser }
-      }
-    } catch {
-      // corrupted header — fall through
-    }
-  }
-
-  // 3. NextAuth cookie session (page navigation / legacy)
+  // 2. NextAuth cookie session (page navigation / server components)
   return getServerSession(authOptions) as Promise<{ user: SessionUser } | null>
 }
 

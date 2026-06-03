@@ -17,8 +17,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ verified: false, message: 'Invalid Aadhaar number format' })
   }
 
-  // TODO: Real Aadhaar OTP verify via Setu
-  console.log(`[Aadhaar Verify] Aadhaar: ${aadhaar.slice(0, 4)}XXXX${aadhaar.slice(8)}`)
+  // TODO: Real Aadhaar OTP verify via Setu — currently format-check only
 
   return NextResponse.json({
     verified: true,

@@ -73,19 +73,33 @@ export async function GET(req: NextRequest) {
     })
 
     const now = new Date()
-    const rows = await Promise.all(clinicsFull.map(async c => {
-      const mtdStart = startOfMonth(now)
-      const prevStart = startOfMonth(subMonths(now, 1))
-      const prevEnd = endOfMonth(subMonths(now, 1))
+    const mtdStart = startOfMonth(now)
+    const prevStart = startOfMonth(subMonths(now, 1))
+    const prevEnd = endOfMonth(subMonths(now, 1))
+    const clinicIdList = clinicsFull.map(c => c.id)
 
-      const [total, mtd, lmtd, mtdDisbAgg, lmtdDisbAgg] = await Promise.all([
-        db.lead.count({ where: { clinicId: c.id } }),
-        db.lead.count({ where: { clinicId: c.id, applicationDate: { gte: mtdStart } } }),
-        db.lead.count({ where: { clinicId: c.id, applicationDate: { gte: prevStart, lte: prevEnd } } }),
-        db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { clinicId: c.id, status: 'DISBURSED', disbursalDate: { gte: mtdStart } } }),
-        db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { clinicId: c.id, status: 'DISBURSED', disbursalDate: { gte: prevStart, lte: prevEnd } } }),
-      ])
+    // Bulk fetch all lead stats in 5 queries total instead of 5 per clinic
+    const [totalCounts, mtdCounts, lmtdCounts, mtdDisbRows, lmtdDisbRows] = await Promise.all([
+      db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: clinicIdList } }, _count: { id: true } }),
+      db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: clinicIdList }, applicationDate: { gte: mtdStart } }, _count: { id: true } }),
+      db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: clinicIdList }, applicationDate: { gte: prevStart, lte: prevEnd } }, _count: { id: true } }),
+      db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: clinicIdList }, status: 'DISBURSED', disbursalDate: { gte: mtdStart } }, _sum: { disbursedAmount: true } }),
+      db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: clinicIdList }, status: 'DISBURSED', disbursalDate: { gte: prevStart, lte: prevEnd } }, _sum: { disbursedAmount: true } }),
+    ])
 
+    const toMap = <T extends { clinicId: string }>(rows: T[]) =>
+      Object.fromEntries(rows.map(r => [r.clinicId, r]))
+
+    const totalMap = toMap(totalCounts)
+    const mtdMap = toMap(mtdCounts)
+    const lmtdMap = toMap(lmtdCounts)
+    const mtdDisbMap = toMap(mtdDisbRows)
+    const lmtdDisbMap = toMap(lmtdDisbRows)
+
+    const rows = clinicsFull.map(c => {
+      const total = totalMap[c.id]?._count.id ?? 0
+      const mtd = mtdMap[c.id]?._count.id ?? 0
+      const lmtd = lmtdMap[c.id]?._count.id ?? 0
       return {
         'Clinic Name': c.name,
         'Region': c.region.name,
@@ -101,10 +115,10 @@ export async function GET(req: NextRequest) {
         'MTD Leads': mtd,
         'LMTD Leads': lmtd,
         'Lead Growth %': lmtd > 0 ? (((mtd - lmtd) / lmtd) * 100).toFixed(1) : '',
-        'MTD Disbursal (₹L)': mtdDisbAgg._sum.disbursedAmount ?? 0,
-        'LMTD Disbursal (₹L)': lmtdDisbAgg._sum.disbursedAmount ?? 0,
+        'MTD Disbursal (₹L)': mtdDisbMap[c.id]?._sum.disbursedAmount ?? 0,
+        'LMTD Disbursal (₹L)': lmtdDisbMap[c.id]?._sum.disbursedAmount ?? 0,
       }
-    }))
+    })
 
     const ws = XLSX.utils.json_to_sheet(rows)
     XLSX.utils.book_append_sheet(wb, ws, 'Clinics')
