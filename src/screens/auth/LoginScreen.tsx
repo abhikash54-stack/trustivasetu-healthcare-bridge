@@ -19,7 +19,7 @@ export function LoginScreen() {
 
   const { mutate: submitLogin, isPending } = useMutation({
     mutationFn: login,
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       dispatch(signIn({ token: data.token, user: data.user }));
     },
     onError: () => {

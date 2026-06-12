@@ -24,8 +24,8 @@ const Drawer = createDrawerNavigator<DrawerParamList>();
 export function DrawerNavigator() {
   return (
     <Drawer.Navigator
-      drawerContent={(props) => <DrawerContent state={props.state} navigation={props.navigation} />}
-      screenOptions={({ navigation }) => ({
+      drawerContent={(props: any) => <DrawerContent state={props.state} navigation={props.navigation} />}
+      screenOptions={({ navigation }: { navigation: any }) => ({
         header: () => <AppHeader navigation={navigation} />,
         drawerStyle: {
           backgroundColor: BRAND.drawerBg,
