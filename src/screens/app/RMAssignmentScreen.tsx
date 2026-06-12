@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import { RouteProp } from '@react-navigation/native';
-import { createBox, createText } from '@shopify/restyle';
 
-import { AppStackParamList } from '../../types/navigation';
-import { Theme } from '../../theme/theme';
+import { Text, Box } from '../../theme/theme';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { FormInput } from '../../components/FormInput';
-
-const Box = createBox<Theme>();
-const Text = createText<Theme>();
 
 type RMAssignmentRouteProp = any;
 

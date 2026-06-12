@@ -29,6 +29,11 @@ export const theme = {
     l: 24,
   },
   textVariants: {
+    defaults: {
+      fontSize: 16,
+      fontWeight: '400' as const,
+      color: 'text' as const,
+    },
     header: {
       fontSize: 28,
       fontWeight: '700' as const,

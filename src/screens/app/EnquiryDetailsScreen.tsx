@@ -1,15 +1,9 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { RouteProp } from '@react-navigation/native';
-import { createBox, createText } from '@shopify/restyle';
 import { useQuery } from '@tanstack/react-query';
 
-import { AppStackParamList } from '../../types/navigation';
 import { fetchEnquiryById } from '../../services/enquiryService';
-import { Theme } from '../../theme/theme';
+import { Text, Box } from '../../theme/theme';
 import { SectionCard } from '../../components/SectionCard';
-
-const Box = createBox<Theme>();
-const Text = createText<Theme>();
 
 type EnquiryDetailsRouteProp = any;
 
