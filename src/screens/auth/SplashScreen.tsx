@@ -4,8 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { AuthStackParamList } from '../../types/navigation';
-import { Text } from '@shopify/restyle';
-import { theme } from '../../theme/theme';
+import { Text } from '../../theme/theme';
 
 type SplashNavigationProp = any;
 

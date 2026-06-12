@@ -1,8 +1,5 @@
 import { TextInput, TextInputProps } from 'react-native';
-import { createBox, createText } from '@shopify/restyle';
-
-const Box = createBox();
-const Text = createText();
+import { Text, Box } from '../theme/theme';
 
 interface FormInputProps extends TextInputProps {
   label: string;

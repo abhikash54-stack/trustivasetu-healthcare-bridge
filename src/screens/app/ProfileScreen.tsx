@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { Text } from '@shopify/restyle';
+import { Text } from '../../theme/theme';
 
 import { RootState } from '../../store';
 import { signOut } from '../../store/slices/authSlice';

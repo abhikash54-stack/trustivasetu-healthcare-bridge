@@ -1,7 +1,7 @@
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Text } from '@shopify/restyle';
+import { Text } from '../../theme/theme';
 import { Lead } from '../../types/auth';
 import { SectionCard } from '../../components/SectionCard';
 import { AppStackParamList } from '../../types/navigation';

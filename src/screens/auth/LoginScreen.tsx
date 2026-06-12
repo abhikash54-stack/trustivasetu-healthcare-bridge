@@ -10,7 +10,7 @@ import { LoginCredentials } from '../../types/auth';
 import { validateEmail, validatePassword } from '../../utils/validators';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { Text } from '@shopify/restyle';
+import { Text } from '../../theme/theme';
 
 type LoginNavigationProp = any;
 

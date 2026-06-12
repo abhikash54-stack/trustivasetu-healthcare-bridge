@@ -11,16 +11,25 @@ import { useCachedAuth } from './hooks/useCachedAuth';
 
 const queryClient = new QueryClient();
 
-export default function App() {
+function AppContent() {
   useCachedAuth();
+
+  return (
+    <>
+      <Navigation />
+      <StatusBar style="auto" />
+    </>
+  );
+}
+
+export default function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <SafeAreaProvider>
             <ThemeProvider>
-              <Navigation />
-              <StatusBar style="auto" />
+              <AppContent />
             </ThemeProvider>
           </SafeAreaProvider>
         </GestureHandlerRootView>

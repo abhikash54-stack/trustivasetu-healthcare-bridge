@@ -1,7 +1,4 @@
-import { createBox, createText } from '@shopify/restyle';
-
-const Box = createBox();
-const Text = createText();
+import { Text, Box } from '../theme/theme';
 
 interface SectionCardProps {
   title: string;

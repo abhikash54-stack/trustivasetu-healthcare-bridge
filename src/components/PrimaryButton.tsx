@@ -1,8 +1,5 @@
 import { Pressable, Text } from 'react-native';
-import { createBox, createText } from '@shopify/restyle';
-
-const Box = createBox();
-const StyledText = createText();
+import { Text as StyledText, Box } from '../theme/theme';
 
 interface PrimaryButtonProps {
   label: string;

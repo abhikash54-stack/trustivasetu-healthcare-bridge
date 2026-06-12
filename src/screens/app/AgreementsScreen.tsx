@@ -1,5 +1,5 @@
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Text } from '@shopify/restyle';
+import { Text } from '../../theme/theme';
 import { Agreement } from '../../types/auth';
 import { SectionCard } from '../../components/SectionCard';
 

@@ -1,3 +1,5 @@
+import { createText, createBox } from '@shopify/restyle';
+
 export const theme = {
   colors: {
     background: '#F5F9FF',
@@ -60,3 +62,6 @@ export const theme = {
 };
 
 export type Theme = typeof theme;
+
+export const Text = createText<Theme>();
+export const Box = createBox<Theme>();

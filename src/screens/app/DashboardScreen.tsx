@@ -1,6 +1,6 @@
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Text } from '@shopify/restyle';
+import { Text } from '../../theme/theme';
 
 import { SectionCard } from '../../components/SectionCard';
 import { DashboardMetric } from '../../components/DashboardMetric';

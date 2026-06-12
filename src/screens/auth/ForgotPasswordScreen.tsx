@@ -7,7 +7,7 @@ import { AuthStackParamList } from '../../types/navigation';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { validateEmail } from '../../utils/validators';
-import { Text } from '@shopify/restyle';
+import { Text } from '../../theme/theme';
 
 type ForgotNavigationProp = any;
 
