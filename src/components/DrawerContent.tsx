@@ -6,6 +6,7 @@ import { Avatar } from './Avatar';
 import { RootState } from '../store';
 import { signOut } from '../store/slices/authSlice';
 import { BRAND } from '../theme/theme';
+import { APP_INFO } from '../config/environment';
 
 interface MenuItem {
   key: string;
@@ -28,6 +29,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'Notifications',     label: 'Notifications',       icon: 'notifications-none',     roles: null },
   { key: 'Profile',           label: 'Profile',             icon: 'person-outline',         roles: null },
   { key: 'Settings',          label: 'Settings',            icon: 'settings',               roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'About',             label: 'About TrustivaSetu',  icon: 'info-outline',           roles: null },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
@@ -114,7 +116,14 @@ export function DrawerContent({ state, navigation }: DrawerContentProps) {
           <Text style={[styles.menuLabel, { color: '#E74C3C' }]}>Logout</Text>
         </TouchableOpacity>
 
-        <View style={{ height: insets.bottom + 16 }} />
+        <View style={{ height: insets.bottom + 8 }} />
+
+        {/* Brand Footer */}
+        <View style={styles.brandFooter}>
+          <Text style={styles.brandName}>{APP_INFO.name}</Text>
+          <Text style={styles.brandTagline}>A Division of Aarthsetu Technologies Pvt Ltd</Text>
+          <Text style={styles.brandVersion}>v{APP_INFO.version}</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -202,5 +211,30 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND.drawerBorder,
     marginHorizontal: 20,
     marginVertical: 8,
+  },
+  brandFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: BRAND.drawerBorder,
+    alignItems: 'flex-start',
+  },
+  brandName: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  brandTagline: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 9,
+    fontWeight: '400',
+    marginTop: 2,
+    lineHeight: 13,
+  },
+  brandVersion: {
+    color: 'rgba(255,255,255,0.25)',
+    fontSize: 9,
+    marginTop: 3,
   },
 });

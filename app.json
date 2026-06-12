@@ -1,31 +1,57 @@
 {
   "expo": {
-    "name": "trustivasetu-healthcare-bridge",
-    "slug": "trustivasetu-healthcare-bridge",
+    "name": "TrustivaSetu",
+    "slug": "trustivasetu",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#006B3C"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aarthsetu.trustivasetu",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Required for document uploads and KYC verification.",
+        "NSPhotoLibraryUsageDescription": "Required for uploading clinic and lead documents.",
+        "NSLocationWhenInUseUsageDescription": "Used to verify clinic locations during onboarding."
+      }
     },
     "android": {
+      "package": "com.aarthsetu.trustivasetu",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#006B3C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "API_BASE_URL": "https://api.trustivasetuhealth.com"
+      "APP_ENV": "production",
+      "eas": {
+        "projectId": "trustivasetu-healthcare-bridge"
+      }
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "owner": "trustivasetu"
   }
 }

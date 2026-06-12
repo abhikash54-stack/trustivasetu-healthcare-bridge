@@ -18,6 +18,7 @@ import { AttendanceScreen } from '../screens/app/AttendanceScreen';
 import { LeaveScreen } from '../screens/app/LeaveScreen';
 import { HRPoliciesScreen } from '../screens/app/HRPoliciesScreen';
 import { EmployeeDirectoryScreen } from '../screens/app/EmployeeDirectoryScreen';
+import { AboutScreen } from '../screens/app/AboutScreen';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -49,6 +50,7 @@ export function DrawerNavigator() {
       <Drawer.Screen name="Notifications"     component={NotificationsScreen} />
       <Drawer.Screen name="Profile"           component={ProfileScreen} />
       <Drawer.Screen name="Settings"          component={SettingsScreen} />
+      <Drawer.Screen name="About"             component={AboutScreen} />
     </Drawer.Navigator>
   );
 }

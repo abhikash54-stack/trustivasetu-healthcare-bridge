@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { Avatar } from './Avatar';
 import { RootState } from '../store';
 import { BRAND } from '../theme/theme';
+import { APP_INFO } from '../config/environment';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -29,8 +30,8 @@ export function AppHeader({ navigation }: AppHeaderProps) {
       <View style={styles.left}>
         <Avatar name={user?.name ?? '?'} size={40} bgColor="rgba(255,255,255,0.22)" />
         <View style={styles.userInfo}>
-          <Text style={styles.name} numberOfLines={1}>{user?.name ?? 'User'}</Text>
-          <Text style={styles.role}>{roleLabel}</Text>
+          <Text style={styles.appBrand} numberOfLines={1}>{APP_INFO.name}</Text>
+          <Text style={styles.name} numberOfLines={1}>{user?.name ?? 'User'} · {roleLabel}</Text>
         </View>
       </View>
       <View style={styles.right}>
@@ -76,11 +77,17 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flex: 1,
   },
-  name: {
+  appBrand: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.1,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  name: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 1,
   },
   role: {
     color: 'rgba(255, 255, 255, 0.72)',
