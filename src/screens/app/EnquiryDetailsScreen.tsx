@@ -13,7 +13,7 @@ interface EnquiryDetailsScreenProps {
 
 export function EnquiryDetailsScreen({ route }: EnquiryDetailsScreenProps) {
   const { enquiryId } = route.params;
-  const { data: enquiry, isLoading } = useQuery(['enquiry', enquiryId], () => fetchEnquiryById(enquiryId));
+  const { data: enquiry, isLoading } = useQuery({ queryKey: ['enquiry', enquiryId], queryFn: () => fetchEnquiryById(enquiryId) });
 
   if (isLoading || !enquiry) {
     return (

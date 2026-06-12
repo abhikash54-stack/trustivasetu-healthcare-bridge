@@ -13,7 +13,7 @@ interface LeadDetailsScreenProps {
 
 export function LeadDetailsScreen({ route }: LeadDetailsScreenProps) {
   const { leadId } = route.params;
-  const { data: lead, isLoading } = useQuery(['lead', leadId], () => fetchLeadById(leadId));
+  const { data: lead, isLoading } = useQuery({ queryKey: ['lead', leadId], queryFn: () => fetchLeadById(leadId) });
 
   if (isLoading || !lead) {
     return (

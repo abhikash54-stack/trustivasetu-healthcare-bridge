@@ -24,7 +24,7 @@ const tiles = [
 
 export function DashboardScreen() {
   const navigation = useNavigation<any>();
-  const { data: metrics } = useQuery<DashboardMetrics>(['dashboard'], fetchDashboard);
+  const { data: metrics } = useQuery<DashboardMetrics>({ queryKey: ['dashboard'], queryFn: fetchDashboard });
 
   return (
     <View style={styles.container}>

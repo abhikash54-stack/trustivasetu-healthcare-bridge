@@ -53,7 +53,9 @@ declare module 'react-native-gesture-handler' {
 }
 
 declare module '@tanstack/react-query' {
-	export function useQuery<T = any>(key: any, fn: any): { data?: T; isLoading?: boolean };
+	export function useQuery<T = any>(options: { queryKey: any; queryFn: any; [key: string]: any }): { data?: T; isLoading: boolean; isError: boolean; error: unknown };
+	export function useMutation<T = any>(options: { mutationFn: any; [key: string]: any }): { mutate: any; mutateAsync: any; isPending: boolean; isError: boolean; error: unknown };
+	export function useInfiniteQuery<T = any>(options: { queryKey: any; queryFn: any; [key: string]: any }): any;
 	export class QueryClient {}
 	export const QueryClientProvider: any;
 }

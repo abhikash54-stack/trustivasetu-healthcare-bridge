@@ -13,7 +13,7 @@ interface ClinicDetailsScreenProps {
 
 export function ClinicDetailsScreen({ route }: ClinicDetailsScreenProps) {
   const { clinicId } = route.params;
-  const { data: clinic, isLoading } = useQuery(['clinic', clinicId], () => fetchClinicById(clinicId));
+  const { data: clinic, isLoading } = useQuery({ queryKey: ['clinic', clinicId], queryFn: () => fetchClinicById(clinicId) });
 
   if (isLoading || !clinic) {
     return (
