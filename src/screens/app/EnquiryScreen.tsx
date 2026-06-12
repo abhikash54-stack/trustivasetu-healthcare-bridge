@@ -1,40 +1,52 @@
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
 import { Text } from '../../theme/theme';
-import { Enquiry } from '../../types/auth';
 import { SectionCard } from '../../components/SectionCard';
-import { AppStackParamList } from '../../types/navigation';
-
-const enquiries: Enquiry[] = [
-  { id: '1', title: 'Invoice reconciliation', status: 'Pending', patientName: 'Deepa', requestedAt: 'Today' },
-  { id: '2', title: 'Payment approval', status: 'In progress', patientName: 'Arjun', requestedAt: 'Yesterday' },
-  { id: '3', title: 'Clinic onboarding', status: 'Completed', patientName: 'Sunita', requestedAt: '2 days ago' },
-];
+import { fetchEnquiries } from '../../services/enquiryService';
 
 export function EnquiryScreen() {
   const navigation = useNavigation<any>();
+  const { data: enquiries = [], isLoading } = useQuery({ queryKey: ['enquiries'], queryFn: fetchEnquiries });
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text variant="body">Loading enquiries...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text variant="header" marginBottom="md">
         Enquiries
       </Text>
-      <FlatList
-        data={enquiries}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <SectionCard title={item.title} subtitle={`${item.status} · ${item.requestedAt}`}>
-            <Text variant="secondary">Patient: {item.patientName}</Text>
-            <Text
-              variant="secondary"
-              style={styles.viewLink}
-              onPress={() => navigation.navigate('EnquiryDetails', { enquiryId: item.id })}
-            >
-              View details
-            </Text>
-          </SectionCard>
-        )}
-      />
+      {enquiries.length === 0 ? (
+        <View style={styles.centered}>
+          <Text variant="title">No enquiries yet</Text>
+          <Text variant="secondary" style={styles.emptyHint}>
+            Patient and clinic enquiries synced from the LOS will appear here.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={enquiries}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <SectionCard title={item.title} subtitle={`${item.status} · ${item.requestedAt}`}>
+              <Text variant="secondary">Patient: {item.patientName}</Text>
+              <Text
+                variant="secondary"
+                style={styles.viewLink}
+                onPress={() => navigation.navigate('EnquiryDetails', { enquiryId: item.id })}
+              >
+                View details
+              </Text>
+            </SectionCard>
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -44,6 +56,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F9FF',
     padding: 24,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyHint: {
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
   viewLink: {
     color: '#0B71EB',

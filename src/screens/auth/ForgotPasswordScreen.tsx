@@ -1,31 +1,34 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useMutation } from '@tanstack/react-query';
 
-import { AuthStackParamList } from '../../types/navigation';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { validateEmail } from '../../utils/validators';
+import { requestPasswordReset } from '../../services/authService';
 import { Text } from '../../theme/theme';
-
-type ForgotNavigationProp = any;
 
 export function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
   const navigation = useNavigation<any>();
+
+  const { mutate: submitReset, isPending } = useMutation({
+    mutationFn: requestPasswordReset,
+    onSuccess: () => {
+      Alert.alert('Reset requested', 'Check your email for password reset instructions.');
+      navigation.navigate('Login');
+    },
+    onError: () => {
+      Alert.alert('Request failed', 'Unable to send reset email. Please try again.');
+    },
+  });
 
   const handleSubmit = () => {
     if (!validateEmail(email)) {
       return Alert.alert('Invalid email', 'Please provide a valid email address.');
     }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Reset requested', 'Check your email for password reset instructions.');
-      navigation.navigate('Login');
-    }, 1200);
+    submitReset(email);
   };
 
   return (
@@ -46,7 +49,11 @@ export function ForgotPasswordScreen() {
             value={email}
             onChangeText={setEmail}
           />
-          <PrimaryButton label={loading ? 'Sending...' : 'Request reset'} onPress={handleSubmit} disabled={loading} />
+          <PrimaryButton
+            label={isPending ? 'Sending...' : 'Request reset'}
+            onPress={handleSubmit}
+            disabled={isPending}
+          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

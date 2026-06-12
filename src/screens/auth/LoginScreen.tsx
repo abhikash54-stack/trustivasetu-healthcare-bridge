@@ -2,37 +2,39 @@ import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useMutation } from '@tanstack/react-query';
 
 import { signIn } from '../../store/slices/authSlice';
-import { AuthStackParamList } from '../../types/navigation';
 import { LoginCredentials } from '../../types/auth';
+import { login } from '../../services/authService';
 import { validateEmail, validatePassword } from '../../utils/validators';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Text } from '../../theme/theme';
 
-type LoginNavigationProp = any;
-
 export function LoginScreen() {
   const [form, setForm] = useState<LoginCredentials>({ email: '', password: '' });
-  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigation = useNavigation<any>();
 
-  const handleSubmit = async () => {
+  const { mutate: submitLogin, isPending } = useMutation({
+    mutationFn: login,
+    onSuccess: (data) => {
+      dispatch(signIn({ token: data.token, user: data.user }));
+    },
+    onError: () => {
+      Alert.alert('Login failed', 'Invalid email or password. Please try again.');
+    },
+  });
+
+  const handleSubmit = () => {
     if (!validateEmail(form.email)) {
       return Alert.alert('Invalid email', 'Enter a valid email address.');
     }
     if (!validatePassword(form.password)) {
       return Alert.alert('Invalid password', 'Password must be at least 8 characters.');
     }
-
-    setLoading(true);
-    setTimeout(() => {
-      dispatch(signIn({ token: 'demo-token', user: { name: 'Asha Patel', email: form.email } }));
-      setLoading(false);
-    }, 1000);
+    submitLogin(form);
   };
 
   return (
@@ -54,7 +56,7 @@ export function LoginScreen() {
         />
         <FormInput
           label="Password"
-          placeholder="********"
+          placeholder="••••••••"
           secureTextEntry
           value={form.password}
           onChangeText={(value) => setForm((prev) => ({ ...prev, password: value }))}
@@ -66,7 +68,11 @@ export function LoginScreen() {
         >
           Forgot password?
         </Text>
-        <PrimaryButton label={loading ? 'Signing in...' : 'Sign in'} onPress={handleSubmit} disabled={loading} />
+        <PrimaryButton
+          label={isPending ? 'Signing in...' : 'Sign in'}
+          onPress={handleSubmit}
+          disabled={isPending}
+        />
       </View>
     </ScrollView>
   );

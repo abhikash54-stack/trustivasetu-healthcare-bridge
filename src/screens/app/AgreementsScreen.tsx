@@ -1,13 +1,5 @@
-import { FlatList, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Text } from '../../theme/theme';
-import { Agreement } from '../../types/auth';
-import { SectionCard } from '../../components/SectionCard';
-
-const agreements: Agreement[] = [
-  { id: '1', title: 'Hospital partner contract', counterparty: 'Aster', status: 'Active' },
-  { id: '2', title: 'Payment manager SLA', counterparty: 'MediPay', status: 'Pending' },
-  { id: '3', title: 'Clinic onboarding agreement', counterparty: 'HealthWave', status: 'Signed' },
-];
 
 export function AgreementsScreen() {
   return (
@@ -15,15 +7,12 @@ export function AgreementsScreen() {
       <Text variant="header" marginBottom="md">
         Agreements
       </Text>
-      <FlatList
-        data={agreements}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <SectionCard title={item.title} subtitle={`${item.counterparty} · ${item.status}`}>
-            <Text variant="secondary">Status: {item.status}</Text>
-          </SectionCard>
-        )}
-      />
+      <View style={styles.empty}>
+        <Text variant="title">No agreements on file</Text>
+        <Text variant="secondary" style={styles.hint}>
+          Financial contracts and clinic onboarding agreements will appear here.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -33,5 +22,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F9FF',
     padding: 24,
+  },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hint: {
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
 });
