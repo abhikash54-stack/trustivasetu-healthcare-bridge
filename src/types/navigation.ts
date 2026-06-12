@@ -4,14 +4,20 @@ export type AuthStackParamList = {
   ForgotPassword: undefined;
 };
 
-export type AppTabParamList = {
+export type DrawerParamList = {
   Dashboard: undefined;
   Leads: undefined;
-  Enquiry: undefined;
-  Clinics: undefined;
+  ClinicOnboarding: undefined;
+  Enquiries: undefined;
+  Attendance: undefined;
+  Leave: undefined;
   Tasks: undefined;
-  Agreements: undefined;
+  Reports: undefined;
+  HRPolicies: undefined;
+  EmployeeDirectory: undefined;
+  Notifications: undefined;
   Profile: undefined;
+  Settings: undefined;
 };
 
 export type AppStackParamList = {
@@ -26,3 +32,6 @@ export type RootStackParamList = {
   Auth: undefined;
   App: undefined;
 };
+
+// Keep for any legacy references
+export type AppTabParamList = DrawerParamList;

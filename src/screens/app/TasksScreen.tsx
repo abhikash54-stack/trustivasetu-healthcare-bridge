@@ -1,9 +1,12 @@
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../theme/theme';
+import { BRAND } from '../../theme/theme';
 
 export function TasksScreen() {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <Text variant="header" marginBottom="md">
         Tasks
       </Text>
@@ -20,7 +23,7 @@ export function TasksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F9FF',
+    backgroundColor: BRAND.background,
     padding: 24,
   },
   empty: {

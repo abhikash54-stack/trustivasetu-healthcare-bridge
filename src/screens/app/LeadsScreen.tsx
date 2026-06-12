@@ -1,12 +1,15 @@
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../theme/theme';
 import { SectionCard } from '../../components/SectionCard';
 import { fetchLeads } from '../../services/leadService';
+import { BRAND } from '../../theme/theme';
 
 export function LeadsScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const { data: leads = [], isLoading } = useQuery({ queryKey: ['leads'], queryFn: fetchLeads });
 
   if (isLoading) {
@@ -18,7 +21,7 @@ export function LeadsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <Text variant="header" marginBottom="md">
         Leads
       </Text>
@@ -55,7 +58,7 @@ export function LeadsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F9FF',
+    backgroundColor: BRAND.background,
     padding: 24,
   },
   centered: {
@@ -69,7 +72,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   viewLink: {
-    color: '#0B71EB',
+    color: BRAND.primary,
     marginTop: 8,
   },
 });
