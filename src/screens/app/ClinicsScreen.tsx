@@ -38,7 +38,7 @@ export function ClinicsScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <SectionCard title={item.name} subtitle={item.location}>
-              <Text variant="secondary">Services: {item.services.join(', ')}</Text>
+              <Text variant="secondary">Status: {item.status ?? '—'}</Text>
               <Text
                 variant="secondary"
                 style={styles.viewLink}

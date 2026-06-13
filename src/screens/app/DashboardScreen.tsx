@@ -121,7 +121,7 @@ export function DashboardScreen() {
       <RNText style={[styles.sectionTitle, { marginTop: 28 }]}>Quick actions</RNText>
       <View style={styles.actionsGrid}>
         <ActionTile label="Leads" icon="people" onPress={() => navigation.navigate('Leads')} />
-        <ActionTile label="Clinic Onboarding" icon="local-hospital" onPress={() => navigation.navigate('ClinicOnboarding')} />
+        <ActionTile label="Channel Partners" icon="business" onPress={() => navigation.navigate('ClinicOnboarding')} />
         <ActionTile label="Enquiries" icon="assignment" onPress={() => navigation.navigate('Enquiries')} />
         <ActionTile label="Tasks" icon="check-circle-outline" onPress={() => navigation.navigate('Tasks')} />
         <ActionTile label="Reports" icon="bar-chart" onPress={() => navigation.navigate('Reports')} />
