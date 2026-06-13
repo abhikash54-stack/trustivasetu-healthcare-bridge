@@ -1,5 +1,16 @@
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BLOCKED' | 'TERMINATED';
+
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RM' | 'EMPLOYEE';
+
 export interface LoginCredentials {
   email: string;
+  password: string;
+}
+
+export interface RegisterCredentials {
+  name: string;
+  email: string;
+  phone: string;
   password: string;
 }
 
@@ -9,6 +20,24 @@ export interface UserProfile {
   email: string;
   phone: string;
   role: string;
+  status: UserStatus;
+}
+
+export interface AuthResponse {
+  token: string;
+  refreshToken: string;
+  expiresIn?: number;
+  user: UserProfile;
+}
+
+export interface ManagedUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: UserStatus;
+  createdAt: string;
 }
 
 export interface Lead {
@@ -41,8 +70,101 @@ export interface Clinic {
 export interface Task {
   id: string;
   title: string;
+  description: string;
   dueDate: string;
-  progress: number;
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'OVERDUE';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  assignedTo: string;
+  assignedBy: string;
+  createdAt: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  date: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  status: 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LATE' | 'HOLIDAY' | 'WEEKEND';
+  workingHours: string | null;
+}
+
+export interface AttendanceSummary {
+  totalPresent: number;
+  totalAbsent: number;
+  totalLeave: number;
+  totalWorkingDays: number;
+  todayStatus: 'CHECKED_IN' | 'CHECKED_OUT' | 'NOT_MARKED';
+  checkInTime: string | null;
+  checkOutTime: string | null;
+}
+
+export interface LeaveQuota {
+  total: number;
+  used: number;
+  remaining: number;
+}
+
+export interface LeaveBalance {
+  casual: LeaveQuota;
+  sick: LeaveQuota;
+  earned: LeaveQuota;
+  unpaid: LeaveQuota;
+}
+
+export type LeaveType = 'CASUAL' | 'SICK' | 'EARNED' | 'UNPAID';
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface Leave {
+  id: string;
+  type: LeaveType;
+  fromDate: string;
+  toDate: string;
+  days: number;
+  reason: string;
+  status: LeaveStatus;
+  appliedAt: string;
+  approvedBy?: string;
+  remarks?: string;
+}
+
+export interface LeaveApplication {
+  type: LeaveType;
+  fromDate: string;
+  toDate: string;
+  reason: string;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'LEAD' | 'TASK' | 'LEAVE' | 'APPROVAL' | 'SYSTEM';
+  isRead: boolean;
+  createdAt: string;
+  referenceId?: string;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  department: string;
+  designation: string;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
+export type PolicyCategory = 'LEAVE' | 'CODE_OF_CONDUCT' | 'COMPENSATION' | 'SAFETY' | 'GENERAL';
+
+export interface HRPolicy {
+  id: string;
+  title: string;
+  category: PolicyCategory;
+  description: string;
+  documentUrl?: string;
+  effectiveDate: string;
+  updatedAt: string;
 }
 
 export interface Agreement {

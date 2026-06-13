@@ -1,5 +1,6 @@
-import { ScrollView, StyleSheet, View, Text as RNText } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Text as RNText } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { RootState } from '../../store';
@@ -7,6 +8,9 @@ import { signOut } from '../../store/slices/authSlice';
 import { Avatar } from '../../components/Avatar';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { BRAND } from '../../theme/theme';
+import { clearAuthState } from '../../services/storageService';
+import { tokenManager } from '../../api/tokenManager';
+import { logout } from '../../services/authService';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Administrator',
@@ -30,20 +34,41 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
   );
 }
 
+function ActionRow({ icon, label, onPress, destructive }: { icon: string; label: string; onPress: () => void; destructive?: boolean }) {
+  return (
+    <TouchableOpacity style={styles.actionRow} onPress={onPress} activeOpacity={0.75}>
+      <View style={[styles.infoIcon, destructive && styles.infoIconDestructive]}>
+        <MaterialIcons name={icon as any} size={18} color={destructive ? '#E74C3C' : BRAND.primary} />
+      </View>
+      <RNText style={[styles.actionLabel, destructive && styles.actionLabelDestructive]}>
+        {label}
+      </RNText>
+      <MaterialIcons name="chevron-right" size={20} color={destructive ? '#E74C3C' : '#CCC'} />
+    </TouchableOpacity>
+  );
+}
+
 export function ProfileScreen() {
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
   const roleLabel = ROLE_LABELS[user?.role?.toUpperCase() ?? ''] ?? 'Staff Member';
   const empId = `EMP-${(user?.id ?? '000000').slice(0, 6).toUpperCase()}`;
+
+  const handleSignOut = async () => {
+    await logout();
+    await clearAuthState();
+    tokenManager.clearTokens();
+    dispatch(signOut());
+  };
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
     >
-      {/* Profile Card */}
       <View style={styles.profileCard}>
         <Avatar name={user?.name ?? '?'} size={72} bgColor={BRAND.accent} />
         <RNText style={styles.name}>{user?.name ?? 'User'}</RNText>
@@ -53,32 +78,33 @@ export function ProfileScreen() {
         </View>
       </View>
 
-      {/* Info Section */}
       <View style={styles.infoCard}>
         <RNText style={styles.sectionTitle}>Account details</RNText>
         <InfoRow icon="email" label="Email" value={user?.email ?? '—'} />
         <InfoRow icon="phone" label="Phone" value={user?.phone ?? '—'} />
         <InfoRow icon="badge" label="Employee ID" value={empId} />
         <InfoRow icon="work" label="Designation" value={roleLabel} />
-        <InfoRow icon="supervisor-account" label="Reporting Manager" value="—" />
       </View>
 
-      {/* Sign Out */}
-      <View style={{ marginTop: 12 }}>
-        <PrimaryButton label="Sign out" onPress={() => dispatch(signOut())} />
+      <View style={styles.infoCard}>
+        <RNText style={styles.sectionTitle}>Security</RNText>
+        <ActionRow
+          icon="lock-reset"
+          label="Change password"
+          onPress={() => navigation.navigate('ChangePassword')}
+        />
+      </View>
+
+      <View style={{ marginTop: 8 }}>
+        <PrimaryButton label="Sign out" onPress={handleSignOut} />
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BRAND.background,
-  },
-  content: {
-    padding: 20,
-  },
+  container: { flex: 1, backgroundColor: BRAND.background },
+  content: { padding: 20 },
   profileCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -91,19 +117,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
   },
-  name: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1A2D1E',
-    marginTop: 14,
-    textAlign: 'center',
-  },
-  role: {
-    fontSize: 14,
-    color: BRAND.primary,
-    fontWeight: '600',
-    marginTop: 4,
-  },
+  name: { fontSize: 20, fontWeight: '700', color: '#1A2D1E', marginTop: 14, textAlign: 'center' },
+  role: { fontSize: 14, color: BRAND.primary, fontWeight: '600', marginTop: 4 },
   badge: {
     backgroundColor: BRAND.primaryLight,
     borderRadius: 20,
@@ -111,12 +126,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     marginTop: 10,
   },
-  badgeText: {
-    color: BRAND.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
+  badgeText: { color: BRAND.primary, fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
   infoCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -152,9 +162,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  infoText: {
-    flex: 1,
-  },
+  infoIconDestructive: { backgroundColor: '#FDECEA' },
+  infoText: { flex: 1 },
   infoLabel: {
     fontSize: 11,
     color: '#5A7A63',
@@ -162,10 +171,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
-  infoValue: {
-    fontSize: 14,
-    color: '#1A2D1E',
-    fontWeight: '500',
-    marginTop: 1,
+  infoValue: { fontSize: 14, color: '#1A2D1E', fontWeight: '500', marginTop: 1 },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
   },
+  actionLabel: { flex: 1, fontSize: 14, color: '#1A2D1E', fontWeight: '500', marginLeft: 12 },
+  actionLabelDestructive: { color: '#E74C3C' },
 });

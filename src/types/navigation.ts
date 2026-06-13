@@ -1,6 +1,7 @@
 export type AuthStackParamList = {
   Splash: undefined;
   Login: undefined;
+  SignUp: undefined;
   ForgotPassword: undefined;
 };
 
@@ -28,6 +29,7 @@ export type AppStackParamList = {
   ClinicDetails: { clinicId: string };
   EnquiryDetails: { enquiryId: string };
   RMAssignment: { clinicId: string };
+  ChangePassword: undefined;
 };
 
 export type RootStackParamList = {
@@ -35,5 +37,4 @@ export type RootStackParamList = {
   App: undefined;
 };
 
-// Keep for any legacy references
 export type AppTabParamList = DrawerParamList;

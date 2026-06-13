@@ -5,6 +5,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Avatar } from './Avatar';
 import { RootState } from '../store';
 import { signOut } from '../store/slices/authSlice';
+import { clearAuthState } from '../services/storageService';
+import { tokenManager } from '../api/tokenManager';
+import { logout } from '../services/authService';
 import { BRAND } from '../theme/theme';
 import { APP_INFO } from '../config/environment';
 
@@ -64,7 +67,16 @@ export function DrawerContent({ state, navigation }: DrawerContentProps) {
   const handleLogout = () => {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => dispatch(signOut()) },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          await clearAuthState();
+          tokenManager.clearTokens();
+          dispatch(signOut());
+        },
+      },
     ]);
   };
 

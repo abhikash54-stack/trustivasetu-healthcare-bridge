@@ -5,6 +5,7 @@ import { LeadDetailsScreen } from '../../screens/app/LeadDetailsScreen';
 import { ClinicDetailsScreen } from '../../screens/app/ClinicDetailsScreen';
 import { EnquiryDetailsScreen } from '../../screens/app/EnquiryDetailsScreen';
 import { RMAssignmentScreen } from '../../screens/app/RMAssignmentScreen';
+import { ChangePasswordScreen } from '../../screens/auth/ChangePasswordScreen';
 import { AppStackParamList } from '../../types/navigation';
 import { BRAND } from '../../theme/theme';
 
@@ -41,6 +42,11 @@ export function AppNavigator() {
         name="RMAssignment"
         component={RMAssignmentScreen}
         options={{ ...detailHeaderOptions, title: 'Assign RM' }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ ...detailHeaderOptions, title: 'Change Password' }}
       />
     </Stack.Navigator>
   );

@@ -2,20 +2,25 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { loadAuthState } from '../services/storageService';
+import { tokenManager } from '../api/tokenManager';
 import { signIn } from '../store/slices/authSlice';
 
 export function useCachedAuth() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    async function init() {
+    async function restoreSession() {
       const stored = await loadAuthState();
       if (stored) {
-        const parsed = JSON.parse(stored) as { token: string; user: { name: string; email: string } };
-        dispatch(signIn(parsed));
+        tokenManager.setTokens(stored.token, stored.refreshToken);
+        dispatch(signIn({
+          token: stored.token,
+          refreshToken: stored.refreshToken,
+          user: stored.user,
+        }));
       }
     }
 
-    init();
+    restoreSession();
   }, [dispatch]);
 }

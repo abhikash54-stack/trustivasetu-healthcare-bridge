@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,22 +12,24 @@ import {
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Avatar } from '../../components/Avatar';
 import { BRAND } from '../../theme/theme';
+import { ManagedUser, UserStatus } from '../../types/auth';
 import {
-  LocalUser,
-  getLocalUsers,
-  createLocalUser,
-  updateLocalUserRole,
-  deleteLocalUser,
-  toggleLocalUser,
-  resetLocalUserPassword,
-} from '../../services/localAuthService';
+  listUsers,
+  createUser,
+  updateUserRole,
+  updateUserStatus,
+  adminResetPassword,
+  deleteUser,
+} from '../../services/userManagementService';
 
 const ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RM', 'EMPLOYEE'] as const;
 
@@ -47,6 +49,14 @@ const ROLE_COLORS: Record<string, string> = {
   EMPLOYEE: '#4D5656',
 };
 
+const STATUS_COLORS: Partial<Record<UserStatus, string>> = {
+  ACTIVE: '#27AE60',
+  INACTIVE: '#E67E22',
+  SUSPENDED: '#E74C3C',
+  BLOCKED: '#922B21',
+  TERMINATED: '#555',
+};
+
 interface AddForm {
   name: string;
   email: string;
@@ -55,101 +65,110 @@ interface AddForm {
   role: string;
 }
 
-const EMPTY_FORM: AddForm = {
-  name: '',
-  email: '',
-  phone: '',
-  password: '',
-  role: 'EMPLOYEE',
-};
+const EMPTY_FORM: AddForm = { name: '', email: '', phone: '', password: '', role: 'EMPLOYEE' };
+
+function isActive(user: ManagedUser): boolean {
+  return user.status === 'ACTIVE';
+}
 
 export function UserManagementScreen() {
   const insets = useSafeAreaInsets();
-  const [users, setUsers] = useState<LocalUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<LocalUser | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [form, setForm] = useState<AddForm>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
+  const [resetPassword, setResetPassword] = useState('');
 
-  const fetchUsers = useCallback(async () => {
-    try {
-      const data = await getLocalUsers();
-      setUsers(data);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const [refreshing, setRefreshing] = useState(false);
+  const queryResult = useQuery({ queryKey: ['users'], queryFn: listUsers }) as any;
+  const users: ManagedUser[] = queryResult.data ?? [];
+  const { isLoading } = queryResult;
+  const refetch = () => (queryResult.refetch as () => Promise<any>)().finally(() => setRefreshing(false));
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  const createMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: (newUser: ManagedUser) => {
+      refetch();
+      setShowAddModal(false);
+      setForm(EMPTY_FORM);
+      Alert.alert('User created', `${newUser.name} has been added as ${ROLE_LABELS[newUser.role] ?? newUser.role}.`);
+    },
+    onError: (error: any) => {
+      Alert.alert('Error', error?.response?.data?.message ?? 'Could not create user.');
+    },
+  });
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchUsers();
-  };
+  const roleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) => updateUserRole(userId, role),
+    onSuccess: () => {
+      refetch();
+      setShowRoleModal(false);
+      const name = selectedUser?.name ?? 'User';
+      Alert.alert('Role updated', `${name}'s role has been changed.`);
+      setSelectedUser(null);
+    },
+    onError: (error: any) => {
+      Alert.alert('Error', error?.response?.data?.message ?? 'Could not update role.');
+    },
+  });
 
-  const handleAddUser = async () => {
-    if (!form.name.trim()) return Alert.alert('Required', 'Enter the user\'s full name.');
+  const statusMutation = useMutation({
+    mutationFn: ({ userId, status }: { userId: string; status: UserStatus }) =>
+      updateUserStatus(userId, status),
+    onSuccess: () => { refetch(); },
+    onError: (error: any) => {
+      Alert.alert('Error', error?.response?.data?.message ?? 'Could not update status.');
+    },
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: ({ userId, password }: { userId: string; password: string }) =>
+      adminResetPassword(userId, password),
+    onSuccess: () => {
+      setShowResetModal(false);
+      setResetPassword('');
+      Alert.alert('Done', `Password reset for ${selectedUser?.name ?? 'user'}.`);
+      setSelectedUser(null);
+    },
+    onError: (error: any) => {
+      Alert.alert('Error', error?.response?.data?.message ?? 'Could not reset password.');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => { refetch(); },
+    onError: (error: any) => {
+      Alert.alert('Error', error?.response?.data?.message ?? 'Could not delete user.');
+    },
+  });
+
+  const handleAddUser = () => {
+    if (!form.name.trim()) return Alert.alert('Required', "Enter the user's full name.");
     if (!form.email.trim() || !form.email.includes('@'))
       return Alert.alert('Required', 'Enter a valid email address.');
     if (!form.password || form.password.length < 6)
       return Alert.alert('Required', 'Password must be at least 6 characters.');
-    setSaving(true);
-    try {
-      await createLocalUser(form);
-      setShowAddModal(false);
-      setForm(EMPTY_FORM);
-      await fetchUsers();
-      Alert.alert('User created', `${form.name} has been added as ${ROLE_LABELS[form.role]}.`);
-    } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Could not create user.');
-    } finally {
-      setSaving(false);
-    }
+    createMutation.mutate(form);
   };
 
-  const handleChangeRole = (user: LocalUser) => {
-    setSelectedUser(user);
-    setShowRoleModal(true);
+  const handleToggleStatus = (user: ManagedUser) => {
+    const toActive = !isActive(user);
+    const action = toActive ? 'Enable' : 'Disable';
+    Alert.alert(`${action} account`, `${action} ${user.name}'s account?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: action,
+        style: toActive ? 'default' : 'destructive',
+        onPress: () =>
+          statusMutation.mutate({ userId: user.id, status: toActive ? 'ACTIVE' : 'INACTIVE' }),
+      },
+    ]);
   };
 
-  const applyRole = async (role: string) => {
-    if (!selectedUser) return;
-    setShowRoleModal(false);
-    await updateLocalUserRole(selectedUser.id, role);
-    await fetchUsers();
-    Alert.alert('Role updated', `${selectedUser.name} is now ${ROLE_LABELS[role]}.`);
-    setSelectedUser(null);
-  };
-
-  const handleToggleActive = (user: LocalUser) => {
-    const action = user.isActive ? 'Disable' : 'Enable';
-    Alert.alert(
-      `${action} account`,
-      `${action} ${user.name}'s account?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: action,
-          style: user.isActive ? 'destructive' : 'default',
-          onPress: async () => {
-            await toggleLocalUser(user.id, !user.isActive);
-            await fetchUsers();
-          },
-        },
-      ],
-    );
-  };
-
-  const handleDelete = (user: LocalUser) => {
-    if (user.id === 'usr_001') {
-      return Alert.alert('Not allowed', 'The primary admin account cannot be deleted.');
-    }
+  const handleDelete = (user: ManagedUser) => {
     Alert.alert(
       'Delete account',
       `Permanently delete ${user.name}? This cannot be undone.`,
@@ -158,72 +177,70 @@ export function UserManagementScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            await deleteLocalUser(user.id);
-            await fetchUsers();
-          },
+          onPress: () => deleteMutation.mutate(user.id),
         },
       ],
     );
   };
 
-  const handleResetPassword = (user: LocalUser) => {
-    Alert.prompt(
-      'Reset password',
-      `Enter a new password for ${user.name}:`,
-      async (newPwd) => {
-        if (!newPwd || newPwd.length < 6) {
-          return Alert.alert('Too short', 'Password must be at least 6 characters.');
-        }
-        await resetLocalUserPassword(user.id, newPwd);
-        Alert.alert('Done', 'Password has been reset.');
-      },
-      'secure-text',
-    );
+  const handleResetPassword = (user: ManagedUser) => {
+    setSelectedUser(user);
+    setResetPassword('');
+    setShowResetModal(true);
   };
 
-  const renderUser = ({ item }: { item: LocalUser }) => (
-    <View style={[styles.userCard, !item.isActive && styles.userCardInactive]}>
+  const submitReset = () => {
+    if (!resetPassword || resetPassword.length < 6) {
+      return Alert.alert('Too short', 'Password must be at least 6 characters.');
+    }
+    if (!selectedUser) return;
+    resetMutation.mutate({ userId: selectedUser.id, password: resetPassword });
+  };
+
+  const renderUser = ({ item }: { item: ManagedUser }) => (
+    <View style={[styles.userCard, !isActive(item) && styles.userCardInactive]}>
       <View style={styles.userRow}>
-        <Avatar name={item.name} size={44} bgColor={item.isActive ? BRAND.primary : '#999'} />
+        <Avatar name={item.name} size={44} bgColor={isActive(item) ? BRAND.primary : '#999'} />
         <View style={styles.userInfo}>
-          <Text style={[styles.userName, !item.isActive && styles.mutedText]}>{item.name}</Text>
+          <Text style={[styles.userName, !isActive(item) && styles.mutedText]}>{item.name}</Text>
           <Text style={styles.userEmail}>{item.email}</Text>
           {item.phone ? <Text style={styles.userPhone}>{item.phone}</Text> : null}
-          <View style={styles.roleBadgeRow}>
+          <View style={styles.badgeRow}>
             <View style={[styles.roleBadge, { backgroundColor: ROLE_COLORS[item.role] ?? '#555' }]}>
               <Text style={styles.roleText}>{ROLE_LABELS[item.role] ?? item.role}</Text>
             </View>
-            {!item.isActive && (
-              <View style={styles.inactiveBadge}>
-                <Text style={styles.inactiveText}>INACTIVE</Text>
-              </View>
-            )}
+            <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] ?? '#999' }]}>
+              <Text style={styles.roleText}>{item.status}</Text>
+            </View>
           </View>
         </View>
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handleChangeRole(item)}>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => { setSelectedUser(item); setShowRoleModal(true); }}
+        >
           <MaterialIcons name="swap-horiz" size={16} color={BRAND.primary} />
           <Text style={styles.actionLabel}>Role</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handleToggleActive(item)}>
+
+        <TouchableOpacity style={styles.actionBtn} onPress={() => handleToggleStatus(item)}>
           <MaterialIcons
-            name={item.isActive ? 'block' : 'check-circle'}
+            name={isActive(item) ? 'block' : 'check-circle'}
             size={16}
-            color={item.isActive ? '#E67E22' : '#27AE60'}
+            color={isActive(item) ? '#E67E22' : '#27AE60'}
           />
-          <Text style={[styles.actionLabel, { color: item.isActive ? '#E67E22' : '#27AE60' }]}>
-            {item.isActive ? 'Disable' : 'Enable'}
+          <Text style={[styles.actionLabel, { color: isActive(item) ? '#E67E22' : '#27AE60' }]}>
+            {isActive(item) ? 'Disable' : 'Enable'}
           </Text>
         </TouchableOpacity>
-        {Platform.OS === 'ios' && (
-          <TouchableOpacity style={styles.actionBtn} onPress={() => handleResetPassword(item)}>
-            <MaterialIcons name="lock-reset" size={16} color="#8E44AD" />
-            <Text style={[styles.actionLabel, { color: '#8E44AD' }]}>Reset Pwd</Text>
-          </TouchableOpacity>
-        )}
+
+        <TouchableOpacity style={styles.actionBtn} onPress={() => handleResetPassword(item)}>
+          <MaterialIcons name="lock-reset" size={16} color="#8E44AD" />
+          <Text style={[styles.actionLabel, { color: '#8E44AD' }]}>Reset Pwd</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item)}>
           <MaterialIcons name="delete-outline" size={16} color="#E74C3C" />
           <Text style={[styles.actionLabel, { color: '#E74C3C' }]}>Delete</Text>
@@ -234,35 +251,50 @@ export function UserManagementScreen() {
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>User Management</Text>
         <Text style={styles.headerSub}>{users.length} account{users.length !== 1 ? 's' : ''}</Text>
       </View>
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator color={BRAND.primary} size="large" style={{ marginTop: 60 }} />
       ) : (
         <FlatList
           data={users}
-          keyExtractor={u => u.id}
+          keyExtractor={(u) => u.id}
           renderItem={renderUser}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => { setRefreshing(true); refetch(); }}
+              tintColor={BRAND.primary}
+            />
+          }
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No users yet. Tap + to create one.</Text>
+            <Text style={styles.emptyText}>No users found. Tap + to create one.</Text>
           }
         />
       )}
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}
+      >
         <MaterialIcons name="person-add" size={26} color="#FFFFFF" />
       </TouchableOpacity>
 
       {/* Add User Modal */}
-      <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
           <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Create User Account</Text>
@@ -270,12 +302,11 @@ export function UserManagementScreen() {
                 <MaterialIcons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
-
             <FormInput
               label="Full Name *"
               placeholder="e.g. Ravi Kumar"
               value={form.name}
-              onChangeText={v => setForm(p => ({ ...p, name: v }))}
+              onChangeText={(v) => setForm((p) => ({ ...p, name: v }))}
             />
             <FormInput
               label="Email *"
@@ -283,33 +314,35 @@ export function UserManagementScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               value={form.email}
-              onChangeText={v => setForm(p => ({ ...p, email: v }))}
+              onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
             />
             <FormInput
               label="Phone"
               placeholder="10-digit mobile number"
               keyboardType="phone-pad"
               value={form.phone}
-              onChangeText={v => setForm(p => ({ ...p, phone: v }))}
+              onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))}
             />
             <FormInput
               label="Password *"
               placeholder="Min. 6 characters"
               secureTextEntry
               value={form.password}
-              onChangeText={v => setForm(p => ({ ...p, password: v }))}
+              onChangeText={(v) => setForm((p) => ({ ...p, password: v }))}
             />
-
             <Text style={styles.rolePickerLabel}>Role *</Text>
             <View style={styles.roleGrid}>
-              {ROLES.map(role => (
+              {ROLES.map((role) => (
                 <TouchableOpacity
                   key={role}
                   style={[
                     styles.roleChip,
-                    form.role === role && { backgroundColor: ROLE_COLORS[role], borderColor: ROLE_COLORS[role] },
+                    form.role === role && {
+                      backgroundColor: ROLE_COLORS[role],
+                      borderColor: ROLE_COLORS[role],
+                    },
                   ]}
-                  onPress={() => setForm(p => ({ ...p, role }))}
+                  onPress={() => setForm((p) => ({ ...p, role }))}
                 >
                   <Text style={[styles.roleChipText, form.role === role && styles.roleChipTextActive]}>
                     {ROLE_LABELS[role]}
@@ -317,12 +350,11 @@ export function UserManagementScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
             <View style={{ marginTop: 12 }}>
               <PrimaryButton
-                label={saving ? 'Creating...' : 'Create Account'}
+                label={createMutation.isPending ? 'Creating...' : 'Create Account'}
                 onPress={handleAddUser}
-                disabled={saving}
+                disabled={createMutation.isPending}
               />
             </View>
           </ScrollView>
@@ -330,20 +362,31 @@ export function UserManagementScreen() {
       </Modal>
 
       {/* Role Picker Modal */}
-      <Modal visible={showRoleModal} transparent animationType="fade" onRequestClose={() => setShowRoleModal(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowRoleModal(false)}>
-          <View style={styles.roleSheet}>
-            <Text style={styles.roleSheetTitle}>
-              Change role for{'\n'}<Text style={{ color: BRAND.primary }}>{selectedUser?.name}</Text>
+      <Modal
+        visible={showRoleModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRoleModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setShowRoleModal(false)}
+        >
+          <View style={styles.bottomSheet}>
+            <Text style={styles.sheetTitle}>
+              Change role for{'\n'}
+              <Text style={{ color: BRAND.primary }}>{selectedUser?.name}</Text>
             </Text>
-            {ROLES.map(role => (
+            {ROLES.map((role) => (
               <TouchableOpacity
                 key={role}
-                style={[
-                  styles.roleOption,
-                  selectedUser?.role === role && styles.roleOptionActive,
-                ]}
-                onPress={() => applyRole(role)}
+                style={[styles.roleOption, selectedUser?.role === role && styles.roleOptionActive]}
+                onPress={() => {
+                  if (selectedUser) {
+                    roleMutation.mutate({ userId: selectedUser.id, role });
+                  }
+                }}
               >
                 <View style={[styles.roleOptionDot, { backgroundColor: ROLE_COLORS[role] }]} />
                 <Text style={styles.roleOptionLabel}>{ROLE_LABELS[role]}</Text>
@@ -357,6 +400,46 @@ export function UserManagementScreen() {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        visible={showResetModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setShowResetModal(false); setResetPassword(''); }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.overlay}
+        >
+          <View style={styles.bottomSheet}>
+            <Text style={styles.sheetTitle}>
+              Reset password for{'\n'}
+              <Text style={{ color: BRAND.primary }}>{selectedUser?.name}</Text>
+            </Text>
+            <TextInput
+              style={styles.resetInput}
+              placeholder="New password (min. 6 chars)"
+              placeholderTextColor="#AAA"
+              secureTextEntry
+              value={resetPassword}
+              onChangeText={setResetPassword}
+              autoFocus
+            />
+            <PrimaryButton
+              label={resetMutation.isPending ? 'Resetting...' : 'Reset Password'}
+              onPress={submitReset}
+              disabled={resetMutation.isPending}
+            />
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => { setShowResetModal(false); setResetPassword(''); }}
+            >
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -391,20 +474,10 @@ const styles = StyleSheet.create({
   userEmail: { fontSize: 12, color: '#666', marginTop: 2 },
   userPhone: { fontSize: 12, color: '#666' },
   mutedText: { color: '#999' },
-  roleBadgeRow: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
-  roleBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
+  badgeRow: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
+  roleBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   roleText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
-  inactiveBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: '#E74C3C',
-  },
-  inactiveText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
   actionRow: {
     flexDirection: 'row',
     gap: 6,
@@ -443,9 +516,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
-  // Add Modal
   modalContent: { padding: 24, paddingBottom: 40 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
   rolePickerLabel: { fontSize: 13, fontWeight: '600', color: '#333', marginBottom: 8, marginTop: 4 },
   roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
@@ -459,16 +536,15 @@ const styles = StyleSheet.create({
   },
   roleChipText: { fontSize: 13, fontWeight: '600', color: '#555' },
   roleChipTextActive: { color: '#FFFFFF' },
-  // Role Sheet Modal
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  roleSheet: {
+  bottomSheet: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
     paddingBottom: 36,
   },
-  roleSheetTitle: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 16, lineHeight: 22 },
+  sheetTitle: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 16, lineHeight: 22 },
   roleOption: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -478,9 +554,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 4,
   },
-  roleOptionActive: { backgroundColor: BRAND.primaryLight ?? '#E8F5EE' },
+  roleOptionActive: { backgroundColor: BRAND.primaryLight },
   roleOptionDot: { width: 10, height: 10, borderRadius: 5 },
   roleOptionLabel: { flex: 1, fontSize: 15, fontWeight: '500', color: '#333' },
   cancelBtn: { marginTop: 8, alignItems: 'center', paddingVertical: 12 },
   cancelBtnText: { fontSize: 15, color: '#999', fontWeight: '600' },
+  resetInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 16,
+  },
 });

@@ -1,54 +1,76 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
-
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useMutation } from '@tanstack/react-query';
 import { Text, Box } from '../../theme/theme';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { FormInput } from '../../components/FormInput';
-
-type RMAssignmentRouteProp = any;
+import { apiClient } from '../../api/axios';
+import { BRAND } from '../../theme/theme';
 
 interface RMAssignmentScreenProps {
   route: { params: { clinicId: string } };
 }
 
+async function assignRM(clinicId: string, rmName: string): Promise<void> {
+  await apiClient.put(`/clinics/${clinicId}/assign-rm`, { rmName });
+}
+
 export function RMAssignmentScreen({ route }: RMAssignmentScreenProps) {
   const { clinicId } = route.params;
   const [assigneeName, setAssigneeName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation<any>();
+
+  const { mutate: submitAssign, isPending } = useMutation({
+    mutationFn: () => assignRM(clinicId, assigneeName.trim()),
+    onSuccess: () => {
+      Alert.alert(
+        'RM Assigned',
+        `${assigneeName.trim()} has been assigned to clinic ${clinicId}.`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }],
+      );
+    },
+    onError: (error: any) => {
+      const message: string =
+        error?.response?.data?.message ?? 'Could not assign RM. Please try again.';
+      Alert.alert('Assignment failed', message);
+    },
+  });
 
   const handleAssign = () => {
     if (!assigneeName.trim()) {
-      return Alert.alert('Enter RM name', 'Provide a regional manager name to assign this clinic.');
+      return Alert.alert('Required', 'Enter a regional manager name or ID.');
     }
-
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Assigned', `Clinic ${clinicId} is now assigned to ${assigneeName}.`);
-    }, 800);
+    submitAssign();
   };
 
   return (
-    <View style={styles.container}>
-      <Text variant="header" marginBottom="md">
-        Assign RM
-      </Text>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <Text variant="body" marginBottom="lg">
         Assign the regional manager responsible for clinic operations and financing workflows.
       </Text>
       <Box backgroundColor="surface" borderRadius="m" padding="md" marginBottom="lg">
         <FormInput label="Clinic ID" value={clinicId} editable={false} />
-        <FormInput label="Regional manager name" placeholder="Enter RM name" value={assigneeName} onChangeText={setAssigneeName} />
+        <FormInput
+          label="Regional manager name"
+          placeholder="Enter RM name or employee ID"
+          value={assigneeName}
+          onChangeText={setAssigneeName}
+        />
       </Box>
-      <PrimaryButton label={loading ? 'Assigning...' : 'Assign RM'} onPress={handleAssign} disabled={loading} />
-    </View>
+      <PrimaryButton
+        label={isPending ? 'Assigning...' : 'Assign RM'}
+        onPress={handleAssign}
+        disabled={isPending}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 24,
-    backgroundColor: '#F5F9FF',
+    backgroundColor: BRAND.background,
   },
 });

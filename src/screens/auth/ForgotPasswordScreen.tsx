@@ -8,19 +8,21 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { validateEmail } from '../../utils/validators';
 import { requestPasswordReset } from '../../services/authService';
 import { Text } from '../../theme/theme';
+import { BRAND } from '../../theme/theme';
 
 export function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
   const navigation = useNavigation<any>();
 
   const { mutate: submitReset, isPending } = useMutation({
     mutationFn: requestPasswordReset,
     onSuccess: () => {
-      Alert.alert('Reset requested', 'Check your email for password reset instructions.');
-      navigation.navigate('Login');
+      setSubmitted(true);
     },
-    onError: () => {
-      Alert.alert('Request failed', 'Unable to send reset email. Please try again.');
+    onError: (error: any) => {
+      const message: string = error?.response?.data?.message ?? 'Unable to send reset email. Please try again.';
+      Alert.alert('Request failed', message);
     },
   });
 
@@ -31,13 +33,25 @@ export function ForgotPasswordScreen() {
     submitReset(email);
   };
 
+  if (submitted) {
+    return (
+      <View style={styles.successContainer}>
+        <View style={styles.card}>
+          <Text variant="header" marginBottom="md">Check your email</Text>
+          <Text variant="body" marginBottom="lg">
+            If an account exists for {email}, you will receive password reset instructions shortly.
+          </Text>
+          <PrimaryButton label="Back to sign in" onPress={() => navigation.navigate('Login')} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text variant="header" marginBottom="md">
-            Forgot password
-          </Text>
+          <Text variant="header" marginBottom="md">Forgot password</Text>
           <Text variant="body" marginBottom="lg">
             Enter your registered email to receive password recovery instructions.
           </Text>
@@ -50,10 +64,17 @@ export function ForgotPasswordScreen() {
             onChangeText={setEmail}
           />
           <PrimaryButton
-            label={isPending ? 'Sending...' : 'Request reset'}
+            label={isPending ? 'Sending...' : 'Send reset link'}
             onPress={handleSubmit}
             disabled={isPending}
           />
+          <Text
+            variant="secondary"
+            style={styles.backLink}
+            onPress={() => navigation.goBack()}
+          >
+            Back to sign in
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -63,7 +84,13 @@ export function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#F5F9FF',
+    backgroundColor: BRAND.background,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  successContainer: {
+    flex: 1,
+    backgroundColor: BRAND.background,
     justifyContent: 'center',
     padding: 24,
   },
@@ -75,5 +102,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
+  },
+  backLink: {
+    textAlign: 'center',
+    marginTop: 16,
+    color: BRAND.primary,
   },
 });

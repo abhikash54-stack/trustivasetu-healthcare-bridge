@@ -7,12 +7,33 @@ import { useMutation } from '@tanstack/react-query';
 import { signIn } from '../../store/slices/authSlice';
 import { LoginCredentials } from '../../types/auth';
 import { login } from '../../services/authService';
+import { saveAuthState } from '../../services/storageService';
+import { tokenManager } from '../../api/tokenManager';
 import { validateEmail, validatePassword } from '../../utils/validators';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Text } from '../../theme/theme';
 import { BRAND } from '../../theme/theme';
 import { APP_INFO } from '../../config/environment';
+
+const STATUS_MESSAGES: Record<string, string> = {
+  INACTIVE: 'Your account is inactive. Please contact your administrator.',
+  SUSPENDED: 'Your account has been suspended. Please contact your administrator.',
+  BLOCKED: 'Your account has been blocked. Please contact your administrator.',
+  TERMINATED: 'Your account has been terminated. Please contact your administrator.',
+};
+
+function resolveStatusMessage(error: any): string | null {
+  const httpStatus: number | undefined = error?.response?.status;
+  const userStatus: string | undefined = error?.response?.data?.userStatus;
+  const reason: string | undefined = error?.response?.data?.reason;
+  const statusKey = userStatus ?? reason;
+
+  if (httpStatus === 403 || statusKey) {
+    return STATUS_MESSAGES[statusKey ?? ''] ?? 'Your account has been disabled. Please contact administrator.';
+  }
+  return null;
+}
 
 export function LoginScreen() {
   const [form, setForm] = useState<LoginCredentials>({ email: '', password: '' });
@@ -21,11 +42,19 @@ export function LoginScreen() {
 
   const { mutate: submitLogin, isPending } = useMutation({
     mutationFn: login,
-    onSuccess: (data: any) => {
-      dispatch(signIn({ token: data.token, user: data.user }));
+    onSuccess: async (data: import('../../types/auth').AuthResponse) => {
+      tokenManager.setTokens(data.token, data.refreshToken);
+      await saveAuthState(data.token, data.refreshToken, data.user);
+      dispatch(signIn({ token: data.token, refreshToken: data.refreshToken, user: data.user }));
     },
-    onError: () => {
-      Alert.alert('Login failed', 'Invalid email or password. Please try again.');
+    onError: (error: any) => {
+      const statusMsg = resolveStatusMessage(error);
+      if (statusMsg) {
+        Alert.alert('Account disabled', statusMsg);
+        return;
+      }
+      const message: string = error?.response?.data?.message ?? 'Invalid email or password. Please try again.';
+      Alert.alert('Login failed', message);
     },
   });
 
@@ -41,7 +70,6 @@ export function LoginScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      {/* Brand Header */}
       <View style={styles.brandHeader}>
         <View style={styles.logoWrap}>
           <RNText style={styles.logoLetter}>T</RNText>
@@ -50,29 +78,26 @@ export function LoginScreen() {
         <RNText style={styles.tagline}>{APP_INFO.tagline}</RNText>
       </View>
 
-      {/* Login Card */}
       <View style={styles.card}>
-        <Text variant="header" marginBottom="md">
-          Welcome back
-        </Text>
-        <Text variant="body" marginBottom="lg">
-          Sign in to access your LMS dashboard.
-        </Text>
+        <Text variant="header" marginBottom="md">Welcome back</Text>
+        <Text variant="body" marginBottom="lg">Sign in to access your LMS dashboard.</Text>
+
         <FormInput
           label="Email"
           placeholder="email@company.com"
           keyboardType="email-address"
           autoCapitalize="none"
           value={form.email}
-          onChangeText={(value) => setForm((prev) => ({ ...prev, email: value }))}
+          onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
         />
         <FormInput
           label="Password"
           placeholder="••••••••"
           secureTextEntry
           value={form.password}
-          onChangeText={(value) => setForm((prev) => ({ ...prev, password: value }))}
+          onChangeText={(v) => setForm((p) => ({ ...p, password: v }))}
         />
+
         <Text
           variant="secondary"
           style={styles.forgot}
@@ -80,11 +105,20 @@ export function LoginScreen() {
         >
           Forgot password?
         </Text>
+
         <PrimaryButton
           label={isPending ? 'Signing in...' : 'Sign in'}
           onPress={handleSubmit}
           disabled={isPending}
         />
+
+        <Text
+          variant="secondary"
+          style={styles.signUpLink}
+          onPress={() => navigation.navigate('SignUp')}
+        >
+          New user? Request access
+        </Text>
       </View>
 
       <RNText style={styles.copyright}>{APP_INFO.copyright}</RNText>
@@ -143,6 +177,11 @@ const styles = StyleSheet.create({
   forgot: {
     alignSelf: 'flex-end',
     marginBottom: 24,
+    color: BRAND.primary,
+  },
+  signUpLink: {
+    textAlign: 'center',
+    marginTop: 16,
     color: BRAND.primary,
   },
   copyright: {
