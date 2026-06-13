@@ -83,7 +83,9 @@ export function LoginScreen() {
 
       <View style={styles.card}>
         <Text variant="header" marginBottom="md">Welcome back</Text>
-        <Text variant="body" marginBottom="lg">Sign in to access your LMS dashboard.</Text>
+        <Text variant="body" marginBottom="lg">
+          Manage healthcare finance leads, clinic partners, and disbursements — all in one place.
+        </Text>
 
         <FormInput
           label="Email"

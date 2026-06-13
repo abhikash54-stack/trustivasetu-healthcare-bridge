@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider, useDispatch } from 'react-redux';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './api/queryClient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { store } from './store';
@@ -13,8 +14,6 @@ import { tokenManager } from './api/tokenManager';
 import { signOut } from './store/slices/authSlice';
 import { clearUser } from './services/storageService';
 import { logout } from './services/authService';
-
-const queryClient = new QueryClient();
 
 function AppContent() {
   const dispatch = useDispatch();

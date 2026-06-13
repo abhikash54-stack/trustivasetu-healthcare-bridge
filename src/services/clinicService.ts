@@ -32,7 +32,7 @@ function normalizeClinicDetail(raw: any): ClinicDetail {
       achievedDisbursal: targets?.achievedDisbursal != null ? String(targets.achievedDisbursal) : '',
     },
     recentLeads: [],
-    notes: '',
+    notes: raw.notes ?? '',
   };
 }
 
@@ -46,4 +46,28 @@ export async function fetchClinicById(clinicId: string): Promise<ClinicDetail> {
   const response = await (apiClient as any).get(`/clinics/${clinicId}`);
   const raw = response.data?.data ?? response.data;
   return normalizeClinicDetail(raw);
+}
+
+export interface CreateClinicInput {
+  name: string;
+  address: string;
+  contactPerson: string;
+  contactNumber: string;
+  email: string;
+  businessPotential: string;
+}
+
+export async function createClinic(input: CreateClinicInput): Promise<Clinic> {
+  const payload: any = {
+    name: input.name.trim(),
+    address: input.address.trim(),
+    contactPerson: input.contactPerson.trim(),
+    contactNumber: input.contactNumber.trim(),
+  };
+  if (input.email.trim()) payload.email = input.email.trim();
+  if (input.businessPotential.trim()) payload.businessPotential = Number(input.businessPotential.trim());
+
+  const response = await (apiClient as any).post('/clinics', payload);
+  const raw = response.data?.data ?? response.data;
+  return normalizeClinic(raw);
 }

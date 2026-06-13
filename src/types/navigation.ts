@@ -30,6 +30,8 @@ export type AppStackParamList = {
   EnquiryDetails: { enquiryId: string };
   RMAssignment: { clinicId: string };
   ChangePassword: undefined;
+  CreateLead: undefined;
+  CreateClinic: undefined;
 };
 
 export type RootStackParamList = {

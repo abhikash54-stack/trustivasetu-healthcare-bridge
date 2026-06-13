@@ -6,6 +6,8 @@ import { ClinicDetailsScreen } from '../../screens/app/ClinicDetailsScreen';
 import { EnquiryDetailsScreen } from '../../screens/app/EnquiryDetailsScreen';
 import { RMAssignmentScreen } from '../../screens/app/RMAssignmentScreen';
 import { ChangePasswordScreen } from '../../screens/auth/ChangePasswordScreen';
+import { CreateLeadScreen } from '../../screens/app/CreateLeadScreen';
+import { CreateClinicScreen } from '../../screens/app/CreateClinicScreen';
 import { AppStackParamList } from '../../types/navigation';
 import { BRAND } from '../../theme/theme';
 
@@ -47,6 +49,16 @@ export function AppNavigator() {
         name="ChangePassword"
         component={ChangePasswordScreen}
         options={{ ...detailHeaderOptions, title: 'Change Password' }}
+      />
+      <Stack.Screen
+        name="CreateLead"
+        component={CreateLeadScreen}
+        options={{ ...detailHeaderOptions, title: 'New Lead' }}
+      />
+      <Stack.Screen
+        name="CreateClinic"
+        component={CreateClinicScreen}
+        options={{ ...detailHeaderOptions, title: 'Onboard Partner' }}
       />
     </Stack.Navigator>
   );

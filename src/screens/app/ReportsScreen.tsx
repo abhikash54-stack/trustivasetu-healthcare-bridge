@@ -12,6 +12,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { BRAND } from '../../theme/theme';
 import { fetchDashboard } from '../../services/dashboardService';
 import { DashboardMetrics } from '../../types/auth';
+import { formatCurrency } from '../../utils/format';
 
 function MetricRow({
   icon,
@@ -72,6 +73,32 @@ function PipelineBar({
   );
 }
 
+function TrendBar({
+  month,
+  value,
+  maxValue,
+}: {
+  month: string;
+  value: number;
+  maxValue: number;
+}) {
+  const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
+  return (
+    <View style={styles.trendItem}>
+      <View style={styles.trendBarWrap}>
+        <View
+          style={[
+            styles.trendBarFill,
+            { height: `${Math.max(pct, 4)}%`, backgroundColor: BRAND.primary },
+          ]}
+        />
+      </View>
+      <RNText style={styles.trendCount}>{value}</RNText>
+      <RNText style={styles.trendMonth}>{month.slice(0, 3)}</RNText>
+    </View>
+  );
+}
+
 export function ReportsScreen() {
   const insets = useSafeAreaInsets();
 
@@ -109,6 +136,8 @@ export function ReportsScreen() {
   const totalLeads = data?.totalLeads ?? 0;
   const counts = data?.leadStatusCounts;
   const runRate = data?.runRate;
+  const trend = data?.trend ?? [];
+  const maxTrendValue = trend.length > 0 ? Math.max(...trend.map((t) => t.value), 1) : 1;
 
   return (
     <ScrollView
@@ -122,16 +151,26 @@ export function ReportsScreen() {
         <MetricRow icon="check-circle" label="Approved" value={data?.approvedLeads} color="#27AE60" />
         <MetricRow icon="account-balance-wallet" label="Disbursed" value={data?.disbursedLeads} color="#3498DB" />
         <MetricRow icon="pending" label="Pending" value={data?.pendingLeads} color="#F39C12" />
-        <MetricRow icon="local-hospital" label="Active Clinics" value={data?.activeClinics} color={BRAND.primaryDark} />
+        <MetricRow icon="local-hospital" label="Active Partners" value={data?.activeClinics} color={BRAND.primaryDark} />
         {data?.topClinic ? (
-          <MetricRow icon="star" label="Top Clinic" value={data.topClinic} color={BRAND.accent} />
+          <MetricRow icon="star" label="Top Partner" value={data.topClinic} color={BRAND.accent} />
         ) : null}
       </SectionCard>
 
       {/* Value metrics */}
       <SectionCard title="Value Metrics">
-        <MetricRow icon="trending-up" label="Approved Value" value={data?.approvedValue} color="#27AE60" />
-        <MetricRow icon="payments" label="Disbursed Value" value={data?.disbursedValue} color="#3498DB" />
+        <MetricRow
+          icon="trending-up"
+          label="Approved Value"
+          value={formatCurrency(data?.approvedValue)}
+          color="#27AE60"
+        />
+        <MetricRow
+          icon="payments"
+          label="Disbursed Value"
+          value={formatCurrency(data?.disbursedValue)}
+          color="#3498DB"
+        />
       </SectionCard>
 
       {/* Pipeline breakdown */}
@@ -161,7 +200,12 @@ export function ReportsScreen() {
             <View style={styles.runRateDivider} />
             <View style={styles.runRateBlock}>
               <RNText style={styles.runRateLabel}>Achievement</RNText>
-              <RNText style={[styles.runRateValue, { color: runRate.percentage >= 100 ? '#27AE60' : '#F39C12' }]}>
+              <RNText
+                style={[
+                  styles.runRateValue,
+                  { color: runRate.percentage >= 100 ? '#27AE60' : '#F39C12' },
+                ]}
+              >
                 {runRate.percentage}%
               </RNText>
             </View>
@@ -178,11 +222,22 @@ export function ReportsScreen() {
         </SectionCard>
       ) : null}
 
+      {/* Monthly trend */}
+      {trend.length > 0 ? (
+        <SectionCard title="Monthly Trend">
+          <View style={styles.trendChart}>
+            {trend.map((t) => (
+              <TrendBar key={t.month} month={t.month} value={t.value} maxValue={maxTrendValue} />
+            ))}
+          </View>
+        </SectionCard>
+      ) : null}
+
       {!data && (
         <View style={styles.noDataCard}>
           <MaterialIcons name="bar-chart" size={40} color="#C8DFD0" />
           <RNText style={styles.noDataText}>No report data available yet</RNText>
-          <RNText style={styles.noDataHint}>Data will populate as leads and clinics are added.</RNText>
+          <RNText style={styles.noDataHint}>Data will populate as leads and partners are added.</RNText>
         </View>
       )}
     </ScrollView>
@@ -233,12 +288,7 @@ const styles = StyleSheet.create({
   metricInfo: { flex: 1 },
   metricLabel: { fontSize: 13, fontWeight: '600', color: '#1A2D1E' },
   metricValue: { fontSize: 16, fontWeight: '800' },
-  pipelineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-  },
+  pipelineRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   pipelineLabel: { width: 72, fontSize: 12, fontWeight: '600', color: '#5A7A63' },
   pipelineBarBg: { flex: 1, height: 8, backgroundColor: '#F0F7F3', borderRadius: 4, overflow: 'hidden' },
   pipelineBarFill: { height: 8, borderRadius: 4 },
@@ -246,10 +296,30 @@ const styles = StyleSheet.create({
   runRateContainer: { flexDirection: 'row', marginBottom: 14 },
   runRateBlock: { flex: 1, alignItems: 'center' },
   runRateDivider: { width: 1, backgroundColor: '#F0F7F3' },
-  runRateLabel: { fontSize: 11, color: '#5A7A63', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
+  runRateLabel: {
+    fontSize: 11,
+    color: '#5A7A63',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
   runRateValue: { fontSize: 18, fontWeight: '800', color: '#1A2D1E' },
   runRateBarBg: { height: 10, backgroundColor: '#F0F7F3', borderRadius: 5, overflow: 'hidden' },
   runRateBarFill: { height: 10, borderRadius: 5, backgroundColor: BRAND.primary },
+  trendChart: { flexDirection: 'row', alignItems: 'flex-end', height: 100, gap: 6 },
+  trendItem: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
+  trendBarWrap: {
+    width: '100%',
+    height: 70,
+    justifyContent: 'flex-end',
+    backgroundColor: '#F0F7F3',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  trendBarFill: { width: '100%', borderRadius: 6 },
+  trendCount: { fontSize: 10, fontWeight: '700', color: '#1A2D1E', marginTop: 4 },
+  trendMonth: { fontSize: 9, color: '#5A7A63', fontWeight: '500' },
   noDataCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
