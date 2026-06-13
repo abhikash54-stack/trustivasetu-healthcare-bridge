@@ -26,8 +26,6 @@ const Drawer = createDrawerNavigator<DrawerParamList>();
 export function DrawerNavigator() {
   return (
     <Drawer.Navigator
-      // Reanimated 4 removed isConfigured(); force modern implementation explicitly
-      useLegacyImplementation={false}
       drawerContent={(props: any) => <DrawerContent state={props.state} navigation={props.navigation} />}
       screenOptions={({ navigation }: { navigation: any }) => ({
         header: () => <AppHeader navigation={navigation} />,
