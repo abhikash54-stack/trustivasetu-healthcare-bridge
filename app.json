@@ -53,9 +53,6 @@
       "expo-font"
     ],
     "owner": "aarthsetu1",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "updates": {
       "url": "https://u.expo.dev/98b5cebf-5f97-4367-8422-573cbb574c87"
     }
