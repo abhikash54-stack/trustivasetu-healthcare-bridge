@@ -136,15 +136,15 @@ export function SettingsScreen() {
       <Section title="Security">
         <SettingRow
           icon="shield"
-          label="Session Timeout"
-          subtitle="Sessions expire automatically on token expiry"
-          value="Auto"
+          label="Session Management"
+          subtitle="Cookie-based session managed by OS HTTP stack"
+          value="Active"
         />
         <SettingRow
           icon="lock"
-          label="Data Encryption"
-          subtitle="Auth tokens stored securely in AsyncStorage"
-          value="Enabled"
+          label="Local Storage"
+          subtitle="Only user profile cached locally — no tokens stored"
+          value="Secure"
         />
       </Section>
 
