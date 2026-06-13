@@ -51,7 +51,12 @@ export function LoginScreen() {
         Alert.alert('Account disabled', statusMsg);
         return;
       }
-      const message: string = error?.response?.data?.message ?? 'Invalid email or password. Please try again.';
+      // Use HTTP response message first, then the thrown Error message, then generic fallback.
+      // authService throws plain Error objects so error.response is always undefined there.
+      const message: string =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Login failed. Please check your connection and try again.';
       Alert.alert('Login failed', message);
     },
   });

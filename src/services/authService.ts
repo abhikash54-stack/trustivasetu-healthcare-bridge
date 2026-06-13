@@ -3,11 +3,9 @@ import { LoginCredentials, UserProfile } from '../types/auth';
 
 const LMS_BASE = 'https://lms.trustivasetu.com';
 
-// Dedicated instance for NextAuth.js cookie-based auth flow.
-// Cookies are managed transparently by the OS HTTP stack (NSURLSession / OkHttp).
 const authHttp = axios.create({
   baseURL: LMS_BASE,
-  timeout: 15000,
+  timeout: 20000,
   withCredentials: true,
   headers: { Accept: 'application/json' },
 }) as any;
@@ -27,16 +25,37 @@ function mapSessionUser(u: any, fallbackEmail?: string): UserProfile {
   };
 }
 
-export async function login(credentials: LoginCredentials): Promise<LoginResult> {
-  // Step 1: get CSRF token (native cookie jar stores CSRF cookies automatically)
-  const csrfRes = await authHttp.get('/api/auth/csrf');
-  const csrfToken: string = csrfRes.data?.csrfToken ?? '';
+// Extract Set-Cookie values from a response for manual forwarding.
+// React Native's native HTTP stack manages cookies automatically, but Expo Go's
+// shared cookie jar can interfere with cross-request cookie forwarding. We extract
+// cookies here as a reliable fallback so the CSRF token round-trip always works.
+function extractSetCookies(headers: any): string {
+  const raw = headers?.['set-cookie'] ?? headers?.['Set-Cookie'];
+  if (!raw) return '';
+  const list = Array.isArray(raw) ? raw : [raw];
+  return list.map((c: string) => c.split(';')[0].trim()).join('; ');
+}
 
-  if (!csrfToken) {
-    throw new Error('Could not get security token. Please check your connection.');
+export async function login(credentials: LoginCredentials): Promise<LoginResult> {
+  // Step 1 — CSRF token
+  let csrfRes: any;
+  try {
+    csrfRes = await authHttp.get('/api/auth/csrf');
+  } catch (err: any) {
+    const isTimeout = err?.code === 'ECONNABORTED' || err?.message?.includes('timeout');
+    if (isTimeout) throw new Error('Request timed out. Check your internet connection.');
+    throw new Error(`Cannot reach ${LMS_BASE}. Check your internet connection.`);
   }
 
-  // Step 2: sign in (CSRF cookie sent automatically by native cookie jar)
+  const csrfToken: string = csrfRes.data?.csrfToken ?? '';
+  if (!csrfToken) {
+    throw new Error('Could not get security token. Please restart the app and try again.');
+  }
+
+  // Manually carry the CSRF cookie in case Expo Go's cookie jar doesn't forward it
+  const csrfCookies = extractSetCookies(csrfRes.headers);
+
+  // Step 2 — Sign in
   const body = [
     `csrfToken=${encodeURIComponent(csrfToken)}`,
     `callbackUrl=${encodeURIComponent(LMS_BASE)}`,
@@ -45,11 +64,21 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
     'json=true',
   ].join('&');
 
-  const signInRes = await authHttp.post(
-    '/api/auth/callback/credentials',
-    body,
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
-  );
+  const signInHeaders: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  if (csrfCookies) {
+    signInHeaders['Cookie'] = csrfCookies;
+  }
+
+  let signInRes: any;
+  try {
+    signInRes = await authHttp.post('/api/auth/callback/credentials', body, {
+      headers: signInHeaders,
+    });
+  } catch (err: any) {
+    throw new Error('Authentication request failed. Please try again.');
+  }
 
   const resultUrl: string = signInRes.data?.url ?? '';
   if (resultUrl.includes('error=')) {
@@ -58,13 +87,13 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
     if (code === 'CredentialsSignin') {
       throw new Error('Invalid email or password.');
     }
-    throw new Error(`Authentication failed: ${code}`);
+    throw new Error(`Sign-in failed (${code}). Please contact your administrator.`);
   }
 
-  // Step 3: fetch session to get user profile (session cookie sent automatically)
+  // Step 3 — Establish session
   const user = await verifySession();
   if (!user) {
-    throw new Error('Login succeeded but session could not be established. Please try again.');
+    throw new Error('Sign-in succeeded but the session could not be established. Please try again.');
   }
 
   return { user };
@@ -76,6 +105,7 @@ export async function logout(): Promise<void> {
     const csrfToken: string = csrfRes.data?.csrfToken ?? '';
     if (!csrfToken) return;
 
+    const csrfCookies = extractSetCookies(csrfRes.headers);
     const body = [
       `csrfToken=${encodeURIComponent(csrfToken)}`,
       `callbackUrl=${encodeURIComponent(LMS_BASE)}`,
@@ -83,10 +113,13 @@ export async function logout(): Promise<void> {
     ].join('&');
 
     await authHttp.post('/api/auth/signout', body, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...(csrfCookies ? { Cookie: csrfCookies } : {}),
+      },
     });
   } catch {
-    // Best effort — local state is cleared by callers regardless
+    // Best effort — callers clear local state regardless
   }
 }
 
@@ -105,7 +138,6 @@ export async function requestPasswordReset(email: string): Promise<void> {
   try {
     await authHttp.post('/api/auth/forgot-password', { email });
   } catch (err: any) {
-    // 404 = endpoint not implemented on this LMS — treat as success
     if (err?.response?.status !== 404) throw err;
   }
 }
