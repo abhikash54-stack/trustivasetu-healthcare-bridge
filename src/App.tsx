@@ -11,7 +11,7 @@ import { ThemeProvider } from './theme/ThemeProvider';
 import { useCachedAuth } from './hooks/useCachedAuth';
 import { tokenManager } from './api/tokenManager';
 import { signOut } from './store/slices/authSlice';
-import { clearAuthState } from './services/storageService';
+import { clearUser } from './services/storageService';
 import { logout } from './services/authService';
 
 const queryClient = new QueryClient();
@@ -23,8 +23,7 @@ function AppContent() {
   useEffect(() => {
     tokenManager.setSessionExpiredCallback(async () => {
       await logout();
-      await clearAuthState();
-      tokenManager.clearTokens();
+      await clearUser();
       dispatch(signOut());
     });
   }, [dispatch]);

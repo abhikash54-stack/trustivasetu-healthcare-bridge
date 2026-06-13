@@ -8,90 +8,89 @@ import {
   Text as RNText,
   View,
 } from 'react-native';
-import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Text } from '../../theme/theme';
 import { BRAND } from '../../theme/theme';
-import { register } from '../../services/authService';
-import { saveAuthState } from '../../services/storageService';
-import { tokenManager } from '../../api/tokenManager';
-import { signIn } from '../../store/slices/authSlice';
 import { validateEmail } from '../../utils/validators';
 import { APP_INFO } from '../../config/environment';
 
-interface RegisterForm {
+interface RequestForm {
   name: string;
   email: string;
   phone: string;
-  password: string;
-  confirmPassword: string;
+  clinic: string;
+  city: string;
 }
 
-const EMPTY_FORM: RegisterForm = {
-  name: '',
-  email: '',
-  phone: '',
-  password: '',
-  confirmPassword: '',
-};
+const EMPTY: RequestForm = { name: '', email: '', phone: '', clinic: '', city: '' };
+
+async function submitAccessRequest(form: RequestForm): Promise<void> {
+  await (axios as any).post(
+    'https://lms.trustivasetu.com/api/enquiries/provider',
+    {
+      source: 'MOBILE_APP',
+      contactPerson: form.name.trim(),
+      email: form.email.trim().toLowerCase(),
+      mobile: form.phone.trim(),
+      clinicName: form.clinic.trim(),
+      city: form.city.trim(),
+      notes: 'Access request from TrustivaSetu mobile app',
+    },
+    { headers: { 'Content-Type': 'application/json' } },
+  );
+}
 
 export function SignUpScreen() {
-  const [form, setForm] = useState<RegisterForm>(EMPTY_FORM);
+  const [form, setForm] = useState<RequestForm>(EMPTY);
+  const [submitted, setSubmitted] = useState(false);
   const navigation = useNavigation<any>();
-  const dispatch = useDispatch();
 
-  const { mutate: submitRegister, isPending } = useMutation({
-    mutationFn: () =>
-      register({
-        name: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
-        phone: form.phone.trim(),
-        password: form.password,
-      }),
-    onSuccess: async (data: import('../../types/auth').AuthResponse) => {
-      tokenManager.setTokens(data.token, data.refreshToken);
-      await saveAuthState(data.token, data.refreshToken, data.user);
-      dispatch(signIn({ token: data.token, refreshToken: data.refreshToken, user: data.user }));
-    },
+  const { mutate: submitRequest, isPending } = useMutation({
+    mutationFn: () => submitAccessRequest(form),
+    onSuccess: () => setSubmitted(true),
     onError: (error: any) => {
       const message: string =
-        error?.response?.data?.message ?? 'Registration failed. Please try again.';
-      Alert.alert('Registration failed', message);
+        error?.response?.data?.message ?? 'Request failed. Please try again.';
+      Alert.alert('Request failed', message);
     },
   });
 
   const handleSubmit = () => {
-    if (!form.name.trim()) {
-      return Alert.alert('Required', 'Enter your full name.');
-    }
-    if (!validateEmail(form.email)) {
-      return Alert.alert('Invalid email', 'Enter a valid email address.');
-    }
-    if (form.phone.replace(/\D/g, '').length < 10) {
-      return Alert.alert('Invalid phone', 'Enter a valid 10-digit phone number.');
-    }
-    if (form.password.length < 8) {
-      return Alert.alert('Weak password', 'Password must be at least 8 characters.');
-    }
-    if (form.password !== form.confirmPassword) {
-      return Alert.alert('Password mismatch', 'Passwords do not match.');
-    }
-    submitRegister();
+    if (!form.name.trim()) return Alert.alert('Required', 'Enter your full name.');
+    if (!validateEmail(form.email)) return Alert.alert('Invalid email', 'Enter a valid email address.');
+    if (form.phone.replace(/\D/g, '').length < 10)
+      return Alert.alert('Invalid phone', 'Enter a valid 10-digit mobile number.');
+    if (!form.clinic.trim()) return Alert.alert('Required', 'Enter your clinic or organisation name.');
+    if (!form.city.trim()) return Alert.alert('Required', 'Enter your city.');
+    submitRequest();
   };
+
+  if (submitted) {
+    return (
+      <View style={styles.successWrap}>
+        <View style={styles.card}>
+          <Text variant="header" marginBottom="md">Request submitted</Text>
+          <Text variant="body" marginBottom="lg">
+            Your access request has been received. An administrator will review it and
+            send your login credentials to {form.email}.
+          </Text>
+          <PrimaryButton label="Back to sign in" onPress={() => navigation.navigate('Login')} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.brandHeader}>
           <View style={styles.logoWrap}>
             <RNText style={styles.logoLetter}>T</RNText>
@@ -101,9 +100,9 @@ export function SignUpScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text variant="header" marginBottom="md">Create account</Text>
+          <Text variant="header" marginBottom="md">Request access</Text>
           <Text variant="body" marginBottom="lg">
-            Register to access the TrustivaSetu LMS platform.
+            Fill in your details and an administrator will set up your account.
           </Text>
 
           <FormInput
@@ -121,29 +120,27 @@ export function SignUpScreen() {
             onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
           />
           <FormInput
-            label="Phone *"
+            label="Mobile *"
             placeholder="10-digit mobile number"
             keyboardType="phone-pad"
             value={form.phone}
             onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))}
           />
           <FormInput
-            label="Password *"
-            placeholder="Minimum 8 characters"
-            secureTextEntry
-            value={form.password}
-            onChangeText={(v) => setForm((p) => ({ ...p, password: v }))}
+            label="Clinic / Organisation *"
+            placeholder="e.g. City Healthcare Clinic"
+            value={form.clinic}
+            onChangeText={(v) => setForm((p) => ({ ...p, clinic: v }))}
           />
           <FormInput
-            label="Confirm Password *"
-            placeholder="Re-enter password"
-            secureTextEntry
-            value={form.confirmPassword}
-            onChangeText={(v) => setForm((p) => ({ ...p, confirmPassword: v }))}
+            label="City *"
+            placeholder="e.g. Mumbai"
+            value={form.city}
+            onChangeText={(v) => setForm((p) => ({ ...p, city: v }))}
           />
 
           <PrimaryButton
-            label={isPending ? 'Creating account...' : 'Create account'}
+            label={isPending ? 'Submitting...' : 'Submit request'}
             onPress={handleSubmit}
             disabled={isPending}
           />
@@ -170,6 +167,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
+  successWrap: {
+    flex: 1,
+    backgroundColor: BRAND.primary,
+    justifyContent: 'center',
+    padding: 24,
+  },
   brandHeader: {
     alignItems: 'center',
     marginBottom: 24,
@@ -183,17 +186,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 10,
   },
-  logoLetter: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '800',
-  },
-  appName: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
+  logoLetter: { color: '#FFFFFF', fontSize: 28, fontWeight: '800' },
+  appName: { color: '#FFFFFF', fontSize: 22, fontWeight: '800', letterSpacing: 0.3 },
   tagline: {
     color: 'rgba(255,255,255,0.72)',
     fontSize: 10,
@@ -210,11 +204,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
   },
-  loginLink: {
-    textAlign: 'center',
-    marginTop: 16,
-    color: BRAND.primary,
-  },
+  loginLink: { textAlign: 'center', marginTop: 16, color: BRAND.primary },
   copyright: {
     color: 'rgba(255,255,255,0.55)',
     fontSize: 10,

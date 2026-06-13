@@ -16,8 +16,7 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { Text } from '../../theme/theme';
 import { BRAND } from '../../theme/theme';
 import { changePassword, logout } from '../../services/authService';
-import { clearAuthState } from '../../services/storageService';
-import { tokenManager } from '../../api/tokenManager';
+import { clearUser } from '../../services/storageService';
 import { signOut } from '../../store/slices/authSlice';
 
 export function ChangePasswordScreen() {
@@ -37,8 +36,7 @@ export function ChangePasswordScreen() {
             text: 'OK',
             onPress: async () => {
               await logout();
-              await clearAuthState();
-              tokenManager.clearTokens();
+              await clearUser();
               dispatch(signOut());
             },
           },

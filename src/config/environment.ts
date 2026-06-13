@@ -20,14 +20,14 @@ const configs: Record<AppEnvironment, EnvironmentConfig> = {
   },
   staging: {
     name: 'Staging',
-    apiUrl: 'https://api-staging.trustivasetuhealth.com/api',
+    apiUrl: 'https://lms.trustivasetu.com/api',
     supportEmail: 'staging@aarthsetu.com',
     websiteUrl: 'https://trustivasetu.com',
     debugMode: true,
   },
   production: {
     name: 'Production',
-    apiUrl: 'https://api.trustivasetuhealth.com/api',
+    apiUrl: 'https://lms.trustivasetu.com/api',
     supportEmail: 'info@trustivasetu.com',
     websiteUrl: 'https://trustivasetu.com',
     debugMode: false,

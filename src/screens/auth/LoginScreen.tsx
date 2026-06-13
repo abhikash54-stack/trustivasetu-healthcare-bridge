@@ -7,8 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { signIn } from '../../store/slices/authSlice';
 import { LoginCredentials } from '../../types/auth';
 import { login } from '../../services/authService';
-import { saveAuthState } from '../../services/storageService';
-import { tokenManager } from '../../api/tokenManager';
+import { saveUser } from '../../services/storageService';
 import { validateEmail, validatePassword } from '../../utils/validators';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
@@ -42,10 +41,9 @@ export function LoginScreen() {
 
   const { mutate: submitLogin, isPending } = useMutation({
     mutationFn: login,
-    onSuccess: async (data: import('../../types/auth').AuthResponse) => {
-      tokenManager.setTokens(data.token, data.refreshToken);
-      await saveAuthState(data.token, data.refreshToken, data.user);
-      dispatch(signIn({ token: data.token, refreshToken: data.refreshToken, user: data.user }));
+    onSuccess: async (data: import('../../services/authService').LoginResult) => {
+      await saveUser(data.user);
+      dispatch(signIn({ user: data.user }));
     },
     onError: (error: any) => {
       const statusMsg = resolveStatusMessage(error);

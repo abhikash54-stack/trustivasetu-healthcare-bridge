@@ -1,51 +1,31 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile } from '../types/auth';
 
-const KEYS = {
-  TOKEN: '@trustiva:token',
-  REFRESH_TOKEN: '@trustiva:refreshToken',
-  USER: '@trustiva:user',
-} as const;
+const USER_KEY = '@trustiva:user';
 
-export async function saveAuthState(
-  token: string,
-  refreshToken: string,
-  user: UserProfile,
-): Promise<void> {
-  await AsyncStorage.multiSet([
-    [KEYS.TOKEN, token],
-    [KEYS.REFRESH_TOKEN, refreshToken],
-    [KEYS.USER, JSON.stringify(user)],
-  ]);
+export async function saveUser(user: UserProfile): Promise<void> {
+  await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
-export async function saveAuthTokens(token: string, refreshToken: string): Promise<void> {
-  await AsyncStorage.multiSet([
-    [KEYS.TOKEN, token],
-    [KEYS.REFRESH_TOKEN, refreshToken],
-  ]);
-}
-
-export async function loadAuthState(): Promise<{
-  token: string;
-  refreshToken: string;
-  user: UserProfile;
-} | null> {
-  const results = await AsyncStorage.multiGet([KEYS.TOKEN, KEYS.REFRESH_TOKEN, KEYS.USER]);
-  const token = results[0][1];
-  const refreshToken = results[1][1];
-  const userRaw = results[2][1];
-
-  if (!token || !refreshToken || !userRaw) return null;
-
+export async function loadUser(): Promise<UserProfile | null> {
+  const raw = await AsyncStorage.getItem(USER_KEY);
+  if (!raw) return null;
   try {
-    const user = JSON.parse(userRaw) as UserProfile;
-    return { token, refreshToken, user };
+    return JSON.parse(raw) as UserProfile;
   } catch {
     return null;
   }
 }
 
-export async function clearAuthState(): Promise<void> {
-  await AsyncStorage.multiRemove([KEYS.TOKEN, KEYS.REFRESH_TOKEN, KEYS.USER]);
+export async function clearUser(): Promise<void> {
+  await AsyncStorage.removeItem(USER_KEY);
 }
+
+// Legacy aliases used across the codebase — delegate to the new functions
+export const saveAuthState = async (
+  _token: string,
+  _refreshToken: string,
+  user: UserProfile,
+): Promise<void> => saveUser(user);
+
+export const clearAuthState = clearUser;

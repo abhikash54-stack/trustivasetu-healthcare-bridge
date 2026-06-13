@@ -5,8 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Avatar } from './Avatar';
 import { RootState } from '../store';
 import { signOut } from '../store/slices/authSlice';
-import { clearAuthState } from '../services/storageService';
-import { tokenManager } from '../api/tokenManager';
+import { clearUser } from '../services/storageService';
 import { logout } from '../services/authService';
 import { BRAND } from '../theme/theme';
 import { APP_INFO } from '../config/environment';
@@ -72,8 +71,7 @@ export function DrawerContent({ state, navigation }: DrawerContentProps) {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          await clearAuthState();
-          tokenManager.clearTokens();
+          await clearUser();
           dispatch(signOut());
         },
       },

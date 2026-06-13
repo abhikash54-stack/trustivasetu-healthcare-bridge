@@ -8,8 +8,7 @@ import { signOut } from '../../store/slices/authSlice';
 import { Avatar } from '../../components/Avatar';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { BRAND } from '../../theme/theme';
-import { clearAuthState } from '../../services/storageService';
-import { tokenManager } from '../../api/tokenManager';
+import { clearUser } from '../../services/storageService';
 import { logout } from '../../services/authService';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -59,8 +58,7 @@ export function ProfileScreen() {
 
   const handleSignOut = async () => {
     await logout();
-    await clearAuthState();
-    tokenManager.clearTokens();
+    await clearUser();
     dispatch(signOut());
   };
 
