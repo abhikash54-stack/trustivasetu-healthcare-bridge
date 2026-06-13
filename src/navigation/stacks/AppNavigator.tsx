@@ -31,7 +31,7 @@ export function AppNavigator() {
       <Stack.Screen
         name="ClinicDetails"
         component={ClinicDetailsScreen}
-        options={{ ...detailHeaderOptions, title: 'Clinic Details' }}
+        options={{ ...detailHeaderOptions, title: 'Channel Partner Details' }}
       />
       <Stack.Screen
         name="EnquiryDetails"

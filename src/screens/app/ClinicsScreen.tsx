@@ -15,7 +15,7 @@ export function ClinicsScreen() {
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text variant="body">Loading clinics...</Text>
+        <Text variant="body">Loading channel partners...</Text>
       </View>
     );
   }
@@ -23,13 +23,13 @@ export function ClinicsScreen() {
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <Text variant="header" marginBottom="md">
-        Clinics
+        Channel Partners
       </Text>
       {clinics.length === 0 ? (
         <View style={styles.centered}>
-          <Text variant="title">No clinics onboarded yet</Text>
+          <Text variant="title">No channel partners onboarded yet</Text>
           <Text variant="secondary" style={styles.emptyHint}>
-            Partner clinics will appear here once onboarded and activated.
+            Channel partners will appear here once onboarded and activated.
           </Text>
         </View>
       ) : (

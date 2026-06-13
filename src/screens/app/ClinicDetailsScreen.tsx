@@ -18,7 +18,7 @@ export function ClinicDetailsScreen({ route }: ClinicDetailsScreenProps) {
   if (isLoading || !clinic) {
     return (
       <View style={styles.loadingContainer}>
-        <Text variant="body">Loading clinic details...</Text>
+        <Text variant="body">Loading channel partner details...</Text>
       </View>
     );
   }
@@ -26,7 +26,7 @@ export function ClinicDetailsScreen({ route }: ClinicDetailsScreenProps) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text variant="header" marginBottom="sm">
-        Clinic details
+        Channel partner details
       </Text>
       <SectionCard title={clinic.name} subtitle={`${clinic.location} · ${clinic.status}`}>
         <Text variant="secondary">Assigned RM: {clinic.assignedRM}</Text>

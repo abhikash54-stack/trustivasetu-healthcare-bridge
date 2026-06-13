@@ -20,7 +20,7 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   { key: 'Dashboard',         label: 'Dashboard',           icon: 'dashboard',              roles: null },
   { key: 'Leads',             label: 'Leads',               icon: 'people',                 roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RM'] },
-  { key: 'ClinicOnboarding',  label: 'Clinic Onboarding',   icon: 'local-hospital',         roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RM'] },
+  { key: 'ClinicOnboarding',  label: 'Channel Partners',     icon: 'business',               roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RM'] },
   { key: 'Enquiries',         label: 'Enquiries',           icon: 'assignment',             roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RM'] },
   { key: 'Attendance',        label: 'Attendance',          icon: 'fingerprint',            roles: ['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE'] },
   { key: 'Leave',             label: 'Leave',               icon: 'event-note',             roles: ['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE'] },
