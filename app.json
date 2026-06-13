@@ -44,11 +44,20 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "APP_ENV": "production"
+      "APP_ENV": "production",
+      "eas": {
+        "projectId": "98b5cebf-5f97-4367-8422-573cbb574c87"
+      }
     },
     "plugins": [
       "expo-font"
     ],
-    "owner": "aarthsetu1"
+    "owner": "aarthsetu1",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/98b5cebf-5f97-4367-8422-573cbb574c87"
+    }
   }
 }
