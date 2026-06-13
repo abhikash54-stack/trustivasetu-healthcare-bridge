@@ -1,6 +1,6 @@
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BLOCKED' | 'TERMINATED';
 
-export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'RM' | 'EMPLOYEE';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'REGIONAL_MANAGER' | 'TEAM_MEMBER';
 
 export interface LoginCredentials {
   email: string;
@@ -38,6 +38,94 @@ export interface ManagedUser {
   role: string;
   status: UserStatus;
   createdAt: string;
+}
+
+export interface Region {
+  id: string;
+  name: string;
+  code: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Lender {
+  id: string;
+  name: string;
+  code: string;
+  isActive: boolean;
+}
+
+export interface Target {
+  id: string;
+  year: number;
+  month: number;
+  leadsTarget: number;
+  disbursalTarget: number;
+  userId?: string;
+  regionId?: string;
+  clinicId?: string;
+  user?: { id: string; name: string };
+  region?: { id: string; name: string };
+  clinic?: { id: string; name: string };
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  entity: string;
+  entityId?: string;
+  details?: string;
+  createdAt: string;
+  user?: { id: string; name: string; email: string; role: string };
+}
+
+export interface MonthlyReport {
+  period: string;
+  month: string;
+  totalLeads: number;
+  approved: number;
+  disbursed: number;
+  leadValue: number;
+  approvedValue: number;
+  disbursedValue: number;
+  approvalRate: number;
+  disbursalRate: number;
+}
+
+export interface RegionReport {
+  id: string;
+  name: string;
+  totalLeads: number;
+  approved: number;
+  disbursed: number;
+  leadValue: number;
+  disbursedValue: number;
+  approvalRate: number;
+}
+
+export interface RMReport {
+  id: string;
+  name: string;
+  role: string;
+  totalLeads: number;
+  approved: number;
+  disbursed: number;
+  leadValue: number;
+  disbursedValue: number;
+  approvalRate: number;
+}
+
+export interface LenderReport {
+  id: string;
+  name: string;
+  code: string;
+  totalLeads: number;
+  approved: number;
+  disbursed: number;
+  approvedValue: number;
+  disbursedValue: number;
+  approvalRate: number;
+  disbursalRate: number;
 }
 
 export interface Lead {
@@ -183,6 +271,7 @@ export interface LeadDetail extends Lead {
   approvalDate: string;
   disbursalDate: string;
   remarks: string;
+  lenderId: string;
   lenderName: string;
   stage: string;
   statusHistory: { status: string; updatedAt: string; note?: string }[];
@@ -195,6 +284,9 @@ export interface ClinicDetail extends Clinic {
   email: string;
   businessPotential: string;
   assignedRM: string;
+  assignedRMId: string;
+  regionId: string;
+  accountNumber: string;
   currentTargets: {
     month: string;
     year: number;

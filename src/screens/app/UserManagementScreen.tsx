@@ -31,22 +31,20 @@ import {
   deleteUser,
 } from '../../services/userManagementService';
 
-const ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'RM', 'EMPLOYEE'] as const;
+const ROLES = ['ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] as const;
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   ADMIN: 'Admin',
-  MANAGER: 'Manager',
-  RM: 'Regional Mgr',
-  EMPLOYEE: 'Employee',
+  REGIONAL_MANAGER: 'Regional Manager',
+  TEAM_MEMBER: 'Team Member',
 };
 
 const ROLE_COLORS: Record<string, string> = {
   SUPER_ADMIN: '#6C3483',
   ADMIN: '#1A5276',
-  MANAGER: '#784212',
-  RM: '#0E6655',
-  EMPLOYEE: '#4D5656',
+  REGIONAL_MANAGER: '#0E6655',
+  TEAM_MEMBER: '#4D5656',
 };
 
 const STATUS_COLORS: Partial<Record<UserStatus, string>> = {
@@ -65,7 +63,7 @@ interface AddForm {
   role: string;
 }
 
-const EMPTY_FORM: AddForm = { name: '', email: '', phone: '', password: '', role: 'EMPLOYEE' };
+const EMPTY_FORM: AddForm = { name: '', email: '', phone: '', password: '', role: 'TEAM_MEMBER' };
 
 function isActive(user: ManagedUser): boolean {
   return user.status === 'ACTIVE';
@@ -149,6 +147,8 @@ export function UserManagementScreen() {
     if (!form.name.trim()) return Alert.alert('Required', "Enter the user's full name.");
     if (!form.email.trim() || !form.email.includes('@'))
       return Alert.alert('Required', 'Enter a valid email address.');
+    if (!form.email.trim().endsWith('@trustivasetu.com'))
+      return Alert.alert('Invalid email', 'Email must end with @trustivasetu.com');
     if (!form.password || form.password.length < 6)
       return Alert.alert('Required', 'Password must be at least 6 characters.');
     createMutation.mutate(form);
@@ -310,7 +310,7 @@ export function UserManagementScreen() {
             />
             <FormInput
               label="Email *"
-              placeholder="user@company.com"
+              placeholder="user@trustivasetu.com"
               keyboardType="email-address"
               autoCapitalize="none"
               value={form.email}

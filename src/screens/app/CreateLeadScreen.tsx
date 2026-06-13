@@ -19,28 +19,25 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import { createLead, CreateLeadInput } from '../../services/leadService';
 import { fetchClinics } from '../../services/clinicService';
-import { Clinic } from '../../types/auth';
+import { fetchLenders } from '../../services/lendersService';
+import { Clinic, Lender } from '../../types/auth';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { BRAND } from '../../theme/theme';
 
-const ENQUIRY_TYPES = [
-  { value: 'MEDICAL', label: 'Medical Finance' },
-  { value: 'PERSONAL', label: 'Personal Loan' },
-  { value: 'BUSINESS', label: 'Business Loan' },
-  { value: 'HOME', label: 'Home Loan' },
-  { value: 'AUTO', label: 'Auto Loan' },
-  { value: 'EDUCATION', label: 'Education Loan' },
-];
+const TODAY = new Date().toISOString().split('T')[0];
 
 interface FormState {
   applicantName: string;
   phone: string;
   email: string;
   amount: string;
-  enquiryType: string;
+  lenderId: string;
+  lenderName: string;
   clinicId: string;
   clinicName: string;
+  applicationDate: string;
+  remarks: string;
 }
 
 const EMPTY: FormState = {
@@ -48,20 +45,25 @@ const EMPTY: FormState = {
   phone: '',
   email: '',
   amount: '',
-  enquiryType: 'MEDICAL',
+  lenderId: '',
+  lenderName: '',
   clinicId: '',
   clinicName: '',
+  applicationDate: TODAY,
+  remarks: '',
 };
 
 export function CreateLeadScreen() {
   const navigation = useNavigation<any>();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [showClinicPicker, setShowClinicPicker] = useState(false);
+  const [showLenderPicker, setShowLenderPicker] = useState(false);
 
-  const { data: clinics = [] } = useQuery<Clinic[]>({
-    queryKey: ['clinics'],
-    queryFn: fetchClinics,
-  });
+  const clinicsResult = useQuery<Clinic[]>({ queryKey: ['clinics'], queryFn: fetchClinics }) as any;
+  const clinics: Clinic[] = clinicsResult.data ?? [];
+
+  const lendersResult = useQuery<Lender[]>({ queryKey: ['lenders'], queryFn: fetchLenders }) as any;
+  const lenders: Lender[] = lendersResult.data ?? [];
 
   const { mutate, isPending } = useMutation({
     mutationFn: (input: CreateLeadInput) => createLead(input),
@@ -86,15 +88,16 @@ export function CreateLeadScreen() {
     if (!form.applicantName.trim()) return Alert.alert('Required', "Enter the applicant's full name.");
     if (!form.phone.trim() || form.phone.trim().length < 10)
       return Alert.alert('Required', 'Enter a valid 10-digit phone number.');
-    if (!form.enquiryType) return Alert.alert('Required', 'Select an enquiry type.');
 
     mutate({
       applicantName: form.applicantName,
       phone: form.phone,
       email: form.email,
       amount: form.amount,
-      enquiryType: form.enquiryType,
+      lenderId: form.lenderId,
       clinicId: form.clinicId,
+      applicationDate: form.applicationDate,
+      remarks: form.remarks,
     });
   };
 
@@ -142,20 +145,21 @@ export function CreateLeadScreen() {
 
         <Text style={styles.sectionLabel}>Loan Details</Text>
 
-        <Text style={styles.fieldLabel}>Enquiry Type *</Text>
-        <View style={styles.chipRow}>
-          {ENQUIRY_TYPES.map((t) => (
-            <TouchableOpacity
-              key={t.value}
-              style={[styles.chip, form.enquiryType === t.value && styles.chipActive]}
-              onPress={() => setForm((p) => ({ ...p, enquiryType: t.value }))}
-            >
-              <Text style={[styles.chipText, form.enquiryType === t.value && styles.chipTextActive]}>
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Text style={styles.fieldLabel}>Lender</Text>
+        <TouchableOpacity style={styles.pickerButton} onPress={() => setShowLenderPicker(true)}>
+          <Text style={[styles.pickerText, !form.lenderName && styles.pickerPlaceholder]}>
+            {form.lenderName || 'Select lender (optional)'}
+          </Text>
+          <MaterialIcons name="arrow-drop-down" size={22} color="#5A7A63" />
+        </TouchableOpacity>
+        {form.lenderName ? (
+          <TouchableOpacity
+            onPress={() => setForm((p) => ({ ...p, lenderId: '', lenderName: '' }))}
+            style={styles.clearBtn}
+          >
+            <Text style={styles.clearBtnText}>Clear selection</Text>
+          </TouchableOpacity>
+        ) : null}
 
         <Text style={styles.fieldLabel}>Channel Partner</Text>
         <TouchableOpacity style={styles.pickerButton} onPress={() => setShowClinicPicker(true)}>
@@ -167,11 +171,29 @@ export function CreateLeadScreen() {
         {form.clinicName ? (
           <TouchableOpacity
             onPress={() => setForm((p) => ({ ...p, clinicId: '', clinicName: '' }))}
-            style={styles.clearPartner}
+            style={styles.clearBtn}
           >
-            <Text style={styles.clearPartnerText}>Clear selection</Text>
+            <Text style={styles.clearBtnText}>Clear selection</Text>
           </TouchableOpacity>
         ) : null}
+
+        <FormInput
+          label="Application Date (YYYY-MM-DD)"
+          placeholder="e.g. 2026-06-13"
+          value={form.applicationDate}
+          onChangeText={set('applicationDate')}
+          autoCapitalize="none"
+        />
+
+        <Text style={styles.sectionLabel}>Additional</Text>
+
+        <FormInput
+          label="Remarks"
+          placeholder="Any notes about this lead"
+          value={form.remarks}
+          onChangeText={set('remarks')}
+          autoCapitalize="sentences"
+        />
 
         <View style={{ marginTop: 24 }}>
           <PrimaryButton
@@ -181,6 +203,55 @@ export function CreateLeadScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Lender picker modal */}
+      <Modal
+        visible={showLenderPicker}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowLenderPicker(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select Lender</Text>
+            <TouchableOpacity onPress={() => setShowLenderPicker(false)}>
+              <MaterialIcons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+          {lenders.length === 0 ? (
+            <View style={styles.modalEmpty}>
+              <ActivityIndicator color={BRAND.primary} />
+              <Text style={styles.modalEmptyText}>Loading lenders...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={lenders}
+              keyExtractor={(l) => l.id}
+              renderItem={({ item: l }) => (
+                <TouchableOpacity
+                  style={styles.listOption}
+                  onPress={() => {
+                    setForm((p) => ({ ...p, lenderId: l.id, lenderName: l.name }));
+                    setShowLenderPicker(false);
+                  }}
+                >
+                  <View style={styles.listOptionIcon}>
+                    <MaterialIcons name="account-balance" size={18} color={BRAND.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.listOptionName}>{l.name}</Text>
+                    <Text style={styles.listOptionSub}>{l.code}</Text>
+                  </View>
+                  {form.lenderId === l.id && (
+                    <MaterialIcons name="check-circle" size={20} color={BRAND.accent} />
+                  )}
+                </TouchableOpacity>
+              )}
+              contentContainerStyle={{ padding: 16 }}
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* Clinic picker modal */}
       <Modal
@@ -207,18 +278,18 @@ export function CreateLeadScreen() {
               keyExtractor={(c) => c.id}
               renderItem={({ item: c }) => (
                 <TouchableOpacity
-                  style={styles.clinicOption}
+                  style={styles.listOption}
                   onPress={() => {
                     setForm((p) => ({ ...p, clinicId: c.id, clinicName: c.name }));
                     setShowClinicPicker(false);
                   }}
                 >
-                  <View style={styles.clinicOptionIcon}>
+                  <View style={styles.listOptionIcon}>
                     <MaterialIcons name="local-hospital" size={18} color={BRAND.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.clinicOptionName}>{c.name}</Text>
-                    <Text style={styles.clinicOptionLocation}>{c.location || '—'}</Text>
+                    <Text style={styles.listOptionName}>{c.name}</Text>
+                    <Text style={styles.listOptionSub}>{c.location || '—'}</Text>
                   </View>
                   {form.clinicId === c.id && (
                     <MaterialIcons name="check-circle" size={20} color={BRAND.accent} />
@@ -247,18 +318,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: '#333', marginBottom: 8, marginTop: 4 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#C8DFD0',
-    backgroundColor: '#FFFFFF',
-  },
-  chipActive: { backgroundColor: BRAND.primary, borderColor: BRAND.primary },
-  chipText: { fontSize: 13, fontWeight: '600', color: '#5A7A63' },
-  chipTextActive: { color: '#FFFFFF' },
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -272,8 +331,8 @@ const styles = StyleSheet.create({
   },
   pickerText: { flex: 1, fontSize: 15, color: '#1A2D1E' },
   pickerPlaceholder: { color: '#A0BBA8' },
-  clearPartner: { alignSelf: 'flex-end', marginBottom: 8 },
-  clearPartnerText: { fontSize: 12, color: BRAND.primary, fontWeight: '600' },
+  clearBtn: { alignSelf: 'flex-end', marginBottom: 8 },
+  clearBtnText: { fontSize: 12, color: BRAND.primary, fontWeight: '600' },
   modalContainer: { flex: 1, backgroundColor: '#FFFFFF' },
   modalHeader: {
     flexDirection: 'row',
@@ -286,7 +345,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A2E' },
   modalEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   modalEmptyText: { color: '#5A7A63', fontSize: 14 },
-  clinicOption: {
+  listOption: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -295,7 +354,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F7F3',
   },
-  clinicOptionIcon: {
+  listOptionIcon: {
     width: 38,
     height: 38,
     borderRadius: 10,
@@ -303,6 +362,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  clinicOptionName: { fontSize: 14, fontWeight: '600', color: '#1A2D1E' },
-  clinicOptionLocation: { fontSize: 12, color: '#5A7A63', marginTop: 2 },
+  listOptionName: { fontSize: 14, fontWeight: '600', color: '#1A2D1E' },
+  listOptionSub: { fontSize: 12, color: '#5A7A63', marginTop: 2 },
 });

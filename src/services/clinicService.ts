@@ -23,6 +23,9 @@ function normalizeClinicDetail(raw: any): ClinicDetail {
     email: raw.email ?? '',
     businessPotential: raw.businessPotential != null ? String(raw.businessPotential) : '',
     assignedRM: raw.assignedRM?.name ?? '',
+    assignedRMId: raw.assignedRMId ?? raw.assignedRM?.id ?? '',
+    regionId: raw.regionId ?? raw.region?.id ?? '',
+    accountNumber: raw.accountNumber ?? '',
     currentTargets: {
       month: targets?.month != null ? (MONTH_NAMES[(Number(targets.month) - 1) % 12] ?? '') : '',
       year: targets?.year ?? new Date().getFullYear(),
@@ -55,6 +58,9 @@ export interface CreateClinicInput {
   contactNumber: string;
   email: string;
   businessPotential: string;
+  regionId: string;
+  accountNumber: string;
+  assignedRMId: string;
 }
 
 export async function createClinic(input: CreateClinicInput): Promise<Clinic> {
@@ -63,9 +69,12 @@ export async function createClinic(input: CreateClinicInput): Promise<Clinic> {
     address: input.address.trim(),
     contactPerson: input.contactPerson.trim(),
     contactNumber: input.contactNumber.trim(),
+    regionId: input.regionId.trim(),
   };
   if (input.email.trim()) payload.email = input.email.trim();
   if (input.businessPotential.trim()) payload.businessPotential = Number(input.businessPotential.trim());
+  if (input.accountNumber.trim()) payload.accountNumber = input.accountNumber.trim();
+  if (input.assignedRMId.trim()) payload.assignedRMId = input.assignedRMId.trim();
 
   const response = await (apiClient as any).post('/clinics', payload);
   const raw = response.data?.data ?? response.data;

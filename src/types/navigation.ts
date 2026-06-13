@@ -10,17 +10,21 @@ export type DrawerParamList = {
   Leads: undefined;
   ClinicOnboarding: undefined;
   Enquiries: undefined;
-  Attendance: undefined;
-  Leave: undefined;
-  Tasks: undefined;
   Reports: undefined;
-  HRPolicies: undefined;
-  EmployeeDirectory: undefined;
   Notifications: undefined;
   Profile: undefined;
   Settings: undefined;
   About: undefined;
   UserManagement: undefined;
+  Regions: undefined;
+  Lenders: undefined;
+  Targets: undefined;
+  AuditLogs: undefined;
+  Attendance: undefined;
+  Leave: undefined;
+  Tasks: undefined;
+  HRPolicies: undefined;
+  EmployeeDirectory: undefined;
 };
 
 export type AppStackParamList = {
@@ -32,6 +36,7 @@ export type AppStackParamList = {
   ChangePassword: undefined;
   CreateLead: undefined;
   CreateClinic: undefined;
+  EditLead: { leadId: string };
 };
 
 export type RootStackParamList = {

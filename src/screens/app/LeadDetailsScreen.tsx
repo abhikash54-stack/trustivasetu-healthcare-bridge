@@ -14,6 +14,7 @@ import { invalidateQueries } from '../../api/queryClient';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { fetchLeadById, updateLeadStatus } from '../../services/leadService';
+import { useNavigation } from '@react-navigation/native';
 import { LeadDetail } from '../../types/auth';
 import { Text, Box } from '../../theme/theme';
 import { SectionCard } from '../../components/SectionCard';
@@ -27,11 +28,12 @@ interface LeadDetailsScreenProps {
 
 const STATUS_OPTIONS = ['PENDING', 'APPROVED', 'DISBURSED', 'REJECTED', 'CANCELLED'];
 
-const STATUS_UPDATE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+const STATUS_UPDATE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER'];
 
 export function LeadDetailsScreen({ route }: LeadDetailsScreenProps) {
   const { leadId } = route.params;
   const { user } = useAuth();
+  const navigation = useNavigation<any>();
   const [showStatusModal, setShowStatusModal] = useState(false);
 
   const queryResult = useQuery({
@@ -101,15 +103,26 @@ export function LeadDetailsScreen({ route }: LeadDetailsScreenProps) {
               </View>
             ) : null}
           </View>
-          {canUpdateStatus && (
-            <TouchableOpacity
-              style={styles.updateStatusBtn}
-              onPress={() => setShowStatusModal(true)}
-            >
-              <MaterialIcons name="edit" size={15} color={BRAND.primary} />
-              <RNText style={styles.updateStatusText}>Update Status</RNText>
-            </TouchableOpacity>
-          )}
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+            {canUpdateStatus && (
+              <TouchableOpacity
+                style={styles.updateStatusBtn}
+                onPress={() => setShowStatusModal(true)}
+              >
+                <MaterialIcons name="swap-horiz" size={15} color={BRAND.primary} />
+                <RNText style={styles.updateStatusText}>Update Status</RNText>
+              </TouchableOpacity>
+            )}
+            {canUpdateStatus && (
+              <TouchableOpacity
+                style={[styles.updateStatusBtn, { borderColor: '#8E44AD' }]}
+                onPress={() => navigation.navigate('EditLead', { leadId })}
+              >
+                <MaterialIcons name="edit" size={15} color="#8E44AD" />
+                <RNText style={[styles.updateStatusText, { color: '#8E44AD' }]}>Edit Lead</RNText>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <SectionCard title="Financial Summary">
