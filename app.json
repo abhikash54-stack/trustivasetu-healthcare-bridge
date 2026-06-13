@@ -44,14 +44,11 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "APP_ENV": "production",
-      "eas": {
-        "projectId": "trustivasetu-healthcare-bridge"
-      }
+      "APP_ENV": "production"
     },
     "plugins": [
       "expo-font"
     ],
-    "owner": "trustivasetu"
+    "owner": "aarthsetu1"
   }
 }

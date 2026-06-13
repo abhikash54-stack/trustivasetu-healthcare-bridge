@@ -154,7 +154,7 @@ GET    /api/testers/:id/audit       — View invitation audit trail
 ```bash
 eas build --profile preview --platform android
 # After build completes (~15 min):
-# Share URL: https://expo.dev/accounts/trustivasetu/builds/<build-id>
+# Share URL: https://expo.dev/accounts/aarthsetu1/builds/<build-id>
 # Recipient installs directly from browser (Android) or TestFlight (iOS)
 ```
 
