@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrustivaSetu — Install App</title>
+  <meta name="description" content="TrustivaSetu LMS mobile app for healthcare finance lead management." />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F0F7F3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 32px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 4px 32px rgba(0,107,60,0.10);
+      text-align: center;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: #006B3C;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 36px;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #1A2D1E;
+      margin-bottom: 6px;
+    }
+    .tagline {
+      font-size: 14px;
+      color: #5A7A63;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      margin-bottom: 12px;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.8; }
+    .btn-android {
+      background: #006B3C;
+      color: #fff;
+    }
+    .btn-ios {
+      background: #F0F7F3;
+      color: #5A7A63;
+      border: 2px solid #C8DFD0;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      background: #E8F5EE;
+      color: #006B3C;
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid #E8F0EC;
+      margin: 24px 0;
+    }
+    .update-note {
+      font-size: 13px;
+      color: #5A7A63;
+      line-height: 1.6;
+      background: #F0F7F3;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 8px;
+      text-align: left;
+    }
+    .update-note strong { color: #006B3C; }
+    .footer {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #AAA;
+    }
+    .footer a { color: #006B3C; text-decoration: none; }
+    #ios-note {
+      display: none;
+      font-size: 13px;
+      color: #E67E22;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🏥</div>
+    <div class="badge">Internal Distribution</div>
+    <h1>TrustivaSetu</h1>
+    <p class="tagline">Healthcare finance lead management for<br/>Aarthsetu Technologies Pvt Ltd</p>
+
+    <a
+      id="android-btn"
+      class="btn btn-android"
+      href="https://github.com/abhikash54-stack/trustivasetu-healthcare-bridge/releases/latest/download/trustivasetu.apk"
+      download="trustivasetu.apk"
+    >
+      ⬇ Download for Android
+    </a>
+
+    <button class="btn btn-ios" onclick="showIOSNote()">
+       iOS (Coming Soon)
+    </button>
+    <p id="ios-note">iOS build requires Apple Developer provisioning. Contact <strong>info@trustivasetu.com</strong> to be added as a TestFlight tester.</p>
+
+    <hr class="divider" />
+
+    <div class="update-note">
+      <strong>Auto-updates enabled.</strong><br/>
+      Once installed, the app updates itself automatically every time you open it. You will <strong>never need to reinstall</strong> for feature updates.
+    </div>
+  </div>
+
+  <div class="footer">
+    TrustivaSetu &mdash; A Division of <a href="https://aarthsetu.com" target="_blank">Aarthsetu Technologies</a><br/>
+    <small>v1.0.0 &bull; Internal build &bull; Do not distribute publicly</small>
+  </div>
+
+  <script>
+    function showIOSNote() {
+      document.getElementById('ios-note').style.display = 'block';
+    }
+
+    // Auto-detect platform and highlight the right button
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isAndroid = /Android/.test(ua);
+    if (isIOS) {
+      document.getElementById('android-btn').style.opacity = '0.4';
+    }
+  </script>
+</body>
+</html>

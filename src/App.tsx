@@ -10,6 +10,7 @@ import { store } from './store';
 import { Navigation } from './navigation';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useCachedAuth } from './hooks/useCachedAuth';
+import { useOTAUpdates } from './hooks/useOTAUpdates';
 import { tokenManager } from './api/tokenManager';
 import { signOut } from './store/slices/authSlice';
 import { clearUser } from './services/storageService';
@@ -18,6 +19,7 @@ import { logout } from './services/authService';
 function AppContent() {
   const dispatch = useDispatch();
   useCachedAuth();
+  useOTAUpdates();
 
   useEffect(() => {
     tokenManager.setSessionExpiredCallback(async () => {

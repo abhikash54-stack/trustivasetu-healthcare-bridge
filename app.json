@@ -57,7 +57,9 @@
     ],
     "owner": "aarthsetu1",
     "updates": {
-      "url": "https://u.expo.dev/98b5cebf-5f97-4367-8422-573cbb574c87"
+      "url": "https://u.expo.dev/98b5cebf-5f97-4367-8422-573cbb574c87",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }
