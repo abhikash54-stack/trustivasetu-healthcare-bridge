@@ -19,6 +19,7 @@ export type DrawerParamList = {
   Profile: undefined;
   Settings: undefined;
   About: undefined;
+  UserManagement: undefined;
 };
 
 export type AppStackParamList = {

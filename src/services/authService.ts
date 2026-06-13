@@ -1,16 +1,10 @@
-import { LoginCredentials, UserProfile } from '../types/auth';
-import { apiClient } from '../api/axios';
-
-interface AuthResponse {
-  token: string;
-  user: UserProfile;
-}
+import { LoginCredentials } from '../types/auth';
+import { localLogin } from './localAuthService';
 
 export async function login(credentials: LoginCredentials) {
-  const response = await apiClient.post('/auth/login', credentials);
-  return response.data as AuthResponse;
+  return localLogin(credentials.email, credentials.password);
 }
 
-export async function requestPasswordReset(email: string) {
-  await apiClient.post('/auth/forgot-password', { email });
+export async function requestPasswordReset(_email: string) {
+  // Placeholder — will connect to backend API when deployed
 }

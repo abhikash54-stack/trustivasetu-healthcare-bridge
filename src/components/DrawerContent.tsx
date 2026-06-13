@@ -28,6 +28,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'EmployeeDirectory', label: 'Employee Directory',  icon: 'contacts',               roles: ['SUPER_ADMIN', 'ADMIN'] },
   { key: 'Notifications',     label: 'Notifications',       icon: 'notifications-none',     roles: null },
   { key: 'Profile',           label: 'Profile',             icon: 'person-outline',         roles: null },
+  { key: 'UserManagement',    label: 'User Management',      icon: 'supervisor-account',     roles: ['SUPER_ADMIN'] },
   { key: 'Settings',          label: 'Settings',            icon: 'settings',               roles: ['SUPER_ADMIN', 'ADMIN'] },
   { key: 'About',             label: 'About TrustivaSetu',  icon: 'info-outline',           roles: null },
 ];
