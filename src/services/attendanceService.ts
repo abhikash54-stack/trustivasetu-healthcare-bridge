@@ -91,6 +91,9 @@ export async function fetchAttendanceSummary(): Promise<AttendanceSummary> {
       checkInLatitude: raw.checkInLatitude,
       checkInLongitude: raw.checkInLongitude,
       checkInAddress: raw.checkInAddress,
+      checkOutLatitude: raw.checkOutLatitude,
+      checkOutLongitude: raw.checkOutLongitude,
+      checkOutAddress: raw.checkOutAddress,
     };
   } catch (error) {
     if (is404(error)) return NULL_SUMMARY;
@@ -106,7 +109,20 @@ export async function fetchAttendanceHistory(params?: { month?: string; dateFrom
     if (params?.dateTo) p.dateTo = params.dateTo;
     const response = await apiClient.get<AttendanceRecord[]>('/attendance/history', { params: p });
     const raw = (response.data as any)?.data ?? response.data;
-    return Array.isArray(raw) ? raw : [];
+    if (!Array.isArray(raw)) return [];
+    return raw.map((r: any) => ({
+      id: r.id ?? '',
+      date: r.date ?? '',
+      checkIn: r.checkIn ?? null,
+      checkOut: r.checkOut ?? null,
+      status: r.status ?? 'ABSENT',
+      workingHours: r.workingHours ?? null,
+      checkInLatitude: r.checkInLatitude,
+      checkInLongitude: r.checkInLongitude,
+      checkInAddress: r.checkInAddress,
+      checkOutLatitude: r.checkOutLatitude,
+      checkOutLongitude: r.checkOutLongitude,
+    }));
   } catch (error) {
     if (is404(error)) return [];
     throw error;

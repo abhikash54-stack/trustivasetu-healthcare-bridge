@@ -1,4 +1,4 @@
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View, Text as RNText } from 'react-native';
+import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View, Text as RNText } from 'react-native';
 import { useState } from 'react';
 import { ListSkeleton } from '../../components/SkeletonLoader';
 import { useNavigation } from '@react-navigation/native';
@@ -10,13 +10,140 @@ import { RootState } from '../../store';
 
 import { fetchDashboard } from '../../services/dashboardService';
 import { fetchAttendanceSummary, checkIn, checkOut, getCurrentLocation } from '../../services/attendanceService';
-import { DashboardMetrics, RecentLead } from '../../types/auth';
+import { DashboardMetrics, DashboardMetricCounts, RecentLead, TrendSeries } from '../../types/auth';
 import { formatCurrency, statusColor, formatStatus } from '../../utils/format';
 import { useAuth } from '../../hooks/useAuth';
 import { useCelebration } from '../../hooks/useCelebration';
 import { getUpcomingOccasions } from '../../services/occasionsService';
 import { CelebrationModal } from '../../components/CelebrationModal';
 import { BRAND } from '../../theme/theme';
+
+const SCREEN_W = Dimensions.get('window').width;
+
+const STATUS_CHART_ITEMS = [
+  { key: 'PENDING' as const,   label: 'Pending',   color: '#F39C12' },
+  { key: 'APPROVED' as const,  label: 'Approved',  color: '#27AE60' },
+  { key: 'DISBURSED' as const, label: 'Disbursed', color: '#3498DB' },
+  { key: 'REJECTED' as const,  label: 'Rejected',  color: '#E74C3C' },
+  { key: 'CANCELLED' as const, label: 'Cancelled', color: '#95A5A6' },
+];
+
+function TrendChart({ trend }: { trend: TrendSeries[] }) {
+  if (!trend || trend.length === 0) return null;
+  const max = Math.max(...trend.map((t) => t.value), 1);
+  const BAR_H = 100;
+
+  return (
+    <View style={chartStyles.card}>
+      <RNText style={chartStyles.title}>Monthly Lead Trend</RNText>
+      <View style={chartStyles.barsRow}>
+        {trend.map((t, i) => {
+          const fillPct = max > 0 ? t.value / max : 0;
+          const fillH = Math.max(fillPct * BAR_H, t.value > 0 ? 4 : 0);
+          return (
+            <View key={i} style={chartStyles.barCol}>
+              <RNText style={chartStyles.barValue}>{t.value > 0 ? t.value : ''}</RNText>
+              <View style={[chartStyles.barTrack, { height: BAR_H }]}>
+                <View style={[chartStyles.barFill, { height: fillH }]} />
+              </View>
+              <RNText style={chartStyles.barLabel} numberOfLines={1}>
+                {(t.month ?? '').slice(0, 3)}
+              </RNText>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function StatusChart({ counts }: { counts: DashboardMetricCounts }) {
+  const total = STATUS_CHART_ITEMS.reduce((s, e) => s + (counts[e.key] ?? 0), 0);
+  if (total === 0) return null;
+  const barW = SCREEN_W - 40 - 80 - 48;
+
+  return (
+    <View style={chartStyles.card}>
+      <RNText style={chartStyles.title}>Lead Status Distribution</RNText>
+      {STATUS_CHART_ITEMS.map(({ key, label, color }) => {
+        const val = counts[key] ?? 0;
+        const pct = total > 0 ? val / total : 0;
+        return (
+          <View key={key} style={chartStyles.statusRow}>
+            <RNText style={chartStyles.statusLabel}>{label}</RNText>
+            <View style={[chartStyles.statusTrack, { width: barW }]}>
+              <View
+                style={[
+                  chartStyles.statusFill,
+                  { width: pct * barW, backgroundColor: color },
+                ]}
+              />
+            </View>
+            <RNText style={[chartStyles.statusVal, { color }]}>{val}</RNText>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const chartStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A2D1E',
+    marginBottom: 14,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  barsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+    justifyContent: 'space-between',
+  },
+  barCol: { flex: 1, alignItems: 'center', gap: 4 },
+  barValue: { fontSize: 9, fontWeight: '700', color: BRAND.primary, height: 12 },
+  barTrack: {
+    width: '100%',
+    backgroundColor: BRAND.primaryLight,
+    borderRadius: 4,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  barFill: {
+    width: '100%',
+    backgroundColor: BRAND.primary,
+    borderRadius: 4,
+  },
+  barLabel: { fontSize: 9, color: '#5A7A63', fontWeight: '600' },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  statusLabel: { fontSize: 12, color: '#5A7A63', fontWeight: '600', width: 60 },
+  statusTrack: {
+    height: 10,
+    backgroundColor: '#F0F7F3',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  statusFill: { height: '100%', borderRadius: 5 },
+  statusVal: { fontSize: 12, fontWeight: '800', width: 28, textAlign: 'right' },
+});
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -318,6 +445,15 @@ export function DashboardScreen() {
             icon="hourglass-empty"
           />
         </View>
+
+        {/* Charts */}
+        {metrics?.trend && metrics.trend.length > 0 && (
+          <>
+            <RNText style={[styles.sectionTitle, { marginTop: 28 }]}>Trends &amp; distribution</RNText>
+            <TrendChart trend={metrics.trend} />
+            {metrics.leadStatusCounts && <StatusChart counts={metrics.leadStatusCounts} />}
+          </>
+        )}
 
         {/* Target Progress */}
         {metrics?.runRate?.target ? (

@@ -196,6 +196,11 @@ export interface AttendanceRecord {
   checkOut: string | null;
   status: 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LATE' | 'HOLIDAY' | 'WEEKEND';
   workingHours: string | null;
+  checkInLatitude?: number;
+  checkInLongitude?: number;
+  checkInAddress?: string;
+  checkOutLatitude?: number;
+  checkOutLongitude?: number;
 }
 
 export interface AttendanceSummary {
@@ -219,6 +224,9 @@ export interface AttendanceSummary {
   checkInLatitude?: number;
   checkInLongitude?: number;
   checkInAddress?: string;
+  checkOutLatitude?: number;
+  checkOutLongitude?: number;
+  checkOutAddress?: string;
 }
 
 export interface LeaveQuota {

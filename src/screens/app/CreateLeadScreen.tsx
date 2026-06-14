@@ -86,8 +86,10 @@ export function CreateLeadScreen() {
 
   const handleSubmit = () => {
     if (!form.applicantName.trim()) return Alert.alert('Required', "Enter the applicant's full name.");
-    if (!form.phone.trim() || form.phone.trim().length < 10)
+    if (!form.phone.trim() || form.phone.replace(/\D/g, '').length < 10)
       return Alert.alert('Required', 'Enter a valid 10-digit phone number.');
+    if (form.amount.trim() && (isNaN(Number(form.amount)) || Number(form.amount) <= 0))
+      return Alert.alert('Invalid', 'Loan amount must be a positive number.');
 
     mutate({
       applicantName: form.applicantName,

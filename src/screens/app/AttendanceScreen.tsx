@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import {
   Alert,
   FlatList,
+  Linking,
   Modal,
   RefreshControl,
   ScrollView,
@@ -11,7 +12,6 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
-  Linking,
 } from 'react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -57,11 +57,18 @@ function StatCard({ value, label, color, icon }: { value: number | string; label
   );
 }
 
+function openMaps(lat: number, lng: number) {
+  Linking.openURL(`https://maps.google.com/?q=${lat},${lng}`).catch(() =>
+    Linking.openURL(`geo:${lat},${lng}`).catch(() => {}),
+  );
+}
+
 function AttendanceRow({ item }: { item: AttendanceRecord }) {
   const color = STATUS_COLOR[item.status] ?? '#95A5A6';
   const label = STATUS_LABEL[item.status] ?? item.status;
   const dateObj = new Date(item.date);
   const dayStr = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const hasLocation = !!(item.checkInLatitude && item.checkInLongitude);
 
   return (
     <View style={styles.historyRow}>
@@ -75,9 +82,24 @@ function AttendanceRow({ item }: { item: AttendanceRecord }) {
             {item.workingHours ? `  ·  ${item.workingHours}` : ''}
           </RNText>
         ) : null}
+        {item.checkInAddress ? (
+          <RNText style={styles.historyAddress} numberOfLines={1}>{item.checkInAddress}</RNText>
+        ) : null}
       </View>
-      <View style={[styles.statusChip, { backgroundColor: color + '18' }]}>
-        <RNText style={[styles.statusChipText, { color }]}>{label}</RNText>
+      <View style={{ alignItems: 'flex-end', gap: 6 }}>
+        <View style={[styles.statusChip, { backgroundColor: color + '18' }]}>
+          <RNText style={[styles.statusChipText, { color }]}>{label}</RNText>
+        </View>
+        {hasLocation && (
+          <TouchableOpacity
+            style={styles.mapPinBtn}
+            onPress={() => openMaps(item.checkInLatitude!, item.checkInLongitude!)}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <MaterialIcons name="place" size={14} color={BRAND.primary} />
+            <RNText style={styles.mapPinText}>Map</RNText>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -345,12 +367,40 @@ export function AttendanceScreen() {
                 </View>
               </View>
 
-              {/* GPS location info */}
+              {/* GPS location info — Punch In */}
               {summary?.checkInAddress ? (
                 <View style={styles.locationRow}>
                   <MaterialIcons name="location-on" size={14} color={BRAND.accent} />
                   <RNText style={styles.locationText} numberOfLines={2}>{summary.checkInAddress}</RNText>
                 </View>
+              ) : null}
+              {summary?.checkInLatitude && summary?.checkInLongitude ? (
+                <TouchableOpacity
+                  style={styles.mapViewBtn}
+                  onPress={() => openMaps(summary.checkInLatitude!, summary.checkInLongitude!)}
+                >
+                  <MaterialIcons name="place" size={14} color={BRAND.primary} />
+                  <RNText style={styles.mapViewBtnText}>View Punch-In Location on Map</RNText>
+                  <MaterialIcons name="open-in-new" size={12} color={BRAND.primary} />
+                </TouchableOpacity>
+              ) : null}
+
+              {/* GPS location info — Punch Out */}
+              {summary?.checkOutAddress ? (
+                <View style={styles.locationRow}>
+                  <MaterialIcons name="logout" size={14} color="#E74C3C" />
+                  <RNText style={styles.locationText} numberOfLines={2}>{summary.checkOutAddress}</RNText>
+                </View>
+              ) : null}
+              {summary?.checkOutLatitude && summary?.checkOutLongitude ? (
+                <TouchableOpacity
+                  style={[styles.mapViewBtn, { borderColor: '#E74C3C30' }]}
+                  onPress={() => openMaps(summary.checkOutLatitude!, summary.checkOutLongitude!)}
+                >
+                  <MaterialIcons name="place" size={14} color="#E74C3C" />
+                  <RNText style={[styles.mapViewBtnText, { color: '#E74C3C' }]}>View Punch-Out Location on Map</RNText>
+                  <MaterialIcons name="open-in-new" size={12} color="#E74C3C" />
+                </TouchableOpacity>
               ) : null}
 
               {/* Captured location preview */}
@@ -637,6 +687,30 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   locationDeniedText: { flex: 1, fontSize: 11, color: '#E74C3C', lineHeight: 16 },
+  mapViewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: BRAND.primaryLight,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: BRAND.primary + '30',
+  },
+  mapViewBtnText: { flex: 1, fontSize: 11, color: BRAND.primary, fontWeight: '600' },
+  historyAddress: { fontSize: 10, color: '#5A7A63', marginTop: 2 },
+  mapPinBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: BRAND.primaryLight,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  mapPinText: { fontSize: 10, color: BRAND.primary, fontWeight: '700' },
   punchBtnRow: { flexDirection: 'row', gap: 10 },
   punchBtn: {
     flex: 1,

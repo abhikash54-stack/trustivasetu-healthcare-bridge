@@ -198,10 +198,8 @@ export function UserManagementScreen() {
 
   const handleAddUser = () => {
     if (!form.name.trim()) return Alert.alert('Required', "Enter the user's full name.");
-    if (!form.email.trim() || !form.email.includes('@'))
+    if (!form.email.trim() || !form.email.includes('@') || !form.email.includes('.'))
       return Alert.alert('Required', 'Enter a valid email address.');
-    if (!form.email.trim().endsWith('@trustivasetu.com'))
-      return Alert.alert('Invalid email', 'Email must end with @trustivasetu.com');
     if (!form.password || form.password.length < 8)
       return Alert.alert('Required', 'Password must be at least 8 characters.');
     createMutation.mutate({ name: form.name, email: form.email, phone: form.phone, password: form.password, role: form.role, regionIds: form.regionIds });
