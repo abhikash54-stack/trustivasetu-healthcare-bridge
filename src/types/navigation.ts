@@ -7,6 +7,7 @@ export type AuthStackParamList = {
 
 export type DrawerParamList = {
   Dashboard: undefined;
+  Attendance: undefined;
   Leads: undefined;
   ClinicOnboarding: undefined;
   Enquiries: undefined;

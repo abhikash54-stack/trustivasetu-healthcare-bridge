@@ -41,6 +41,17 @@ export async function createUser(payload: {
   return normalizeUser(response.data?.data ?? response.data);
 }
 
+export async function updateUser(userId: string, payload: {
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  regionIds?: string[];
+}): Promise<ManagedUser> {
+  const response = await apiClient.patch(`/users/${userId}`, payload);
+  return normalizeUser(response.data?.data ?? response.data);
+}
+
 export async function updateUserRole(userId: string, role: string): Promise<void> {
   await apiClient.patch(`/users/${userId}`, { role });
 }

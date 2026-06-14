@@ -6,6 +6,7 @@ import { DrawerParamList } from '../types/navigation';
 import { BRAND } from '../theme/theme';
 
 import { DashboardScreen } from '../screens/app/DashboardScreen';
+import { AttendanceScreen } from '../screens/app/AttendanceScreen';
 import { LeadsScreen } from '../screens/app/LeadsScreen';
 import { ClinicsScreen } from '../screens/app/ClinicsScreen';
 import { EnquiryScreen } from '../screens/app/EnquiryScreen';
@@ -41,6 +42,7 @@ export function DrawerNavigator() {
       })}
     >
       <Drawer.Screen name="Dashboard"         component={DashboardScreen} />
+      <Drawer.Screen name="Attendance"        component={AttendanceScreen} />
       <Drawer.Screen name="Leads"             component={LeadsScreen} />
       <Drawer.Screen name="ClinicOnboarding"  component={ClinicsScreen} />
       <Drawer.Screen name="Enquiries"         component={EnquiryScreen} />

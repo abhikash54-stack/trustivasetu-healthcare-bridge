@@ -19,6 +19,7 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   { key: 'Dashboard',          label: 'Dashboard',              icon: 'dashboard',           roles: null },
+  { key: 'Attendance',         label: 'Attendance',             icon: 'fingerprint',         roles: null },
   { key: 'Chatbot',            label: 'Partner Assistant',      icon: 'support-agent',       roles: null },
   { key: 'Leads',              label: 'Leads',                  icon: 'people',              roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
   { key: 'ClinicOnboarding',   label: 'Channel Partners',       icon: 'business',            roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },

@@ -94,8 +94,37 @@ export function ClinicsScreen() {
     );
   }
 
+  const totalActive = clinics.filter((c) => c.status?.toUpperCase() === 'ACTIVE').length;
+  const totalInactive = clinics.filter((c) => c.status?.toUpperCase() === 'INACTIVE').length;
+
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      {/* Stats cards */}
+      {clinics.length > 0 && (
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { borderTopColor: BRAND.primary }]}>
+            <MaterialIcons name="business" size={16} color={BRAND.primary} />
+            <RNText style={[styles.statValue, { color: BRAND.primary }]}>{clinics.length}</RNText>
+            <RNText style={styles.statLabel}>Total</RNText>
+          </View>
+          <View style={[styles.statCard, { borderTopColor: '#27AE60' }]}>
+            <MaterialIcons name="check-circle" size={16} color="#27AE60" />
+            <RNText style={[styles.statValue, { color: '#27AE60' }]}>{totalActive}</RNText>
+            <RNText style={styles.statLabel}>Active</RNText>
+          </View>
+          <View style={[styles.statCard, { borderTopColor: '#E67E22' }]}>
+            <MaterialIcons name="pause-circle" size={16} color="#E67E22" />
+            <RNText style={[styles.statValue, { color: '#E67E22' }]}>{totalInactive}</RNText>
+            <RNText style={styles.statLabel}>Inactive</RNText>
+          </View>
+          <View style={[styles.statCard, { borderTopColor: '#8E44AD' }]}>
+            <MaterialIcons name="filter-list" size={16} color="#8E44AD" />
+            <RNText style={[styles.statValue, { color: '#8E44AD' }]}>{filtered.length}</RNText>
+            <RNText style={styles.statLabel}>Showing</RNText>
+          </View>
+        </View>
+      )}
+
       {/* Search */}
       <View style={styles.searchWrap}>
         <MaterialIcons name="search" size={20} color="#5A7A63" style={styles.searchIcon} />
@@ -181,6 +210,29 @@ export function ClinicsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BRAND.background },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 2,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderTopWidth: 3,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    gap: 3,
+  },
+  statValue: { fontSize: 18, fontWeight: '800' },
+  statLabel: { fontSize: 10, color: '#5A7A63', fontWeight: '600', textAlign: 'center' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   loadingText: { color: '#5A7A63', marginTop: 12, fontSize: 14 },
   errorText: { color: '#E74C3C', fontSize: 15, fontWeight: '600', marginTop: 12 },

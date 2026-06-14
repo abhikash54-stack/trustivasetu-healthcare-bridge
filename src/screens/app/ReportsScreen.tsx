@@ -206,12 +206,22 @@ function MonthlyTab() {
       <SectionCard title="Monthly Breakdown (6 months)">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
-            <TableHeader cols={['Period', 'Leads', 'Apprvd', 'Disb', 'Rate']} />
+            <TableHeader cols={['Period', 'Leads', 'Apprvd', 'Disb', 'App%', 'Disb%', 'Lead Value', 'Apprvd Value', 'Disb Value']} />
             {data.map((r, i) => (
               <TableRow
                 key={r.period}
                 highlight={i % 2 === 0}
-                cells={[r.month || r.period, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`]}
+                cells={[
+                  r.month || r.period,
+                  r.totalLeads,
+                  r.approved,
+                  r.disbursed,
+                  `${r.approvalRate}%`,
+                  `${r.disbursalRate ?? 0}%`,
+                  formatCurrency(r.leadValue),
+                  formatCurrency(r.approvedValue),
+                  formatCurrency(r.disbursedValue),
+                ]}
               />
             ))}
           </View>
@@ -233,12 +243,12 @@ function RegionTab() {
       <SectionCard title="Region-wise Performance">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
-            <TableHeader cols={['Region', 'Leads', 'Apprvd', 'Disb', 'Rate']} />
+            <TableHeader cols={['Region', 'Leads', 'Apprvd', 'Disb', 'Rate', 'Lead Value', 'Disb Value']} />
             {data.map((r, i) => (
               <TableRow
                 key={r.id}
                 highlight={i % 2 === 0}
-                cells={[r.name, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`]}
+                cells={[r.name, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`, formatCurrency(r.leadValue), formatCurrency(r.disbursedValue)]}
               />
             ))}
           </View>
@@ -259,16 +269,51 @@ function RMTab() {
     <SectionCard title="RM-wise Performance">
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View>
-          <TableHeader cols={['Name', 'Leads', 'Apprvd', 'Disb', 'Rate']} />
+          <TableHeader cols={['Name', 'Role', 'Leads', 'Apprvd', 'Disb', 'Rate', 'Lead Value', 'Disb Value']} />
           {data.map((r, i) => (
             <TableRow
               key={r.id}
               highlight={i % 2 === 0}
-              cells={[r.name, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`]}
+              cells={[r.name, r.role?.replace(/_/g, ' ') ?? '—', r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`, formatCurrency(r.leadValue), formatCurrency(r.disbursedValue)]}
             />
           ))}
         </View>
       </ScrollView>
+    </SectionCard>
+  );
+}
+
+function LenderApprovalChart({ data }: { data: LenderReport[] }) {
+  if (data.length === 0) return null;
+  const maxLeads = Math.max(...data.map((r) => r.totalLeads), 1);
+  return (
+    <SectionCard title="Lender Approval Chart">
+      {data.slice(0, 8).map((r) => {
+        const leadPct = (r.totalLeads / maxLeads) * 100;
+        const apprvdPct = r.totalLeads > 0 ? (r.approved / r.totalLeads) * 100 : 0;
+        return (
+          <View key={r.id} style={styles.lenderChartRow}>
+            <RNText style={styles.lenderChartName} numberOfLines={1}>{r.name}</RNText>
+            <View style={styles.lenderChartBars}>
+              <View style={styles.lenderBarTrack}>
+                <View style={[styles.lenderBarFill, { width: `${leadPct}%`, backgroundColor: BRAND.primary + '40' }]} />
+                <View style={[styles.lenderBarFillOverlay, { width: `${apprvdPct}%`, backgroundColor: BRAND.accent }]} />
+              </View>
+              <RNText style={styles.lenderChartRate}>{r.approvalRate}%</RNText>
+            </View>
+          </View>
+        );
+      })}
+      <View style={styles.chartLegend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: BRAND.primary + '40' }]} />
+          <RNText style={styles.legendLabel}>Total Leads</RNText>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: BRAND.accent }]} />
+          <RNText style={styles.legendLabel}>Approved</RNText>
+        </View>
+      </View>
     </SectionCard>
   );
 }
@@ -281,15 +326,16 @@ function LenderTab() {
   if (data.length === 0) return <EmptyBox icon="account-balance" message="No lender data" />;
   return (
     <>
+      <LenderApprovalChart data={data} />
       <SectionCard title="Lender-wise Performance">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
-            <TableHeader cols={['Lender', 'Code', 'Leads', 'Apprvd', 'Rate']} />
+            <TableHeader cols={['Lender', 'Code', 'Leads', 'Apprvd', 'Disb', 'App%', 'Disb%', 'Apprvd Value', 'Disb Value']} />
             {data.map((r, i) => (
               <TableRow
                 key={r.id}
                 highlight={i % 2 === 0}
-                cells={[r.name, r.code, r.totalLeads, r.approved, `${r.approvalRate}%`]}
+                cells={[r.name, r.code, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`, `${r.disbursalRate ?? 0}%`, formatCurrency(r.approvedValue), formatCurrency(r.disbursedValue)]}
               />
             ))}
           </View>
@@ -468,4 +514,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   exportBtnText: { fontSize: 12, fontWeight: '700', color: BRAND.primary },
+  lenderChartRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 },
+  lenderChartName: { width: 80, fontSize: 11, fontWeight: '600', color: '#1A2D1E' },
+  lenderChartBars: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  lenderBarTrack: { flex: 1, height: 16, backgroundColor: '#F0F7F3', borderRadius: 8, overflow: 'hidden', position: 'relative' },
+  lenderBarFill: { position: 'absolute', top: 0, left: 0, bottom: 0, borderRadius: 8 },
+  lenderBarFillOverlay: { position: 'absolute', top: 2, left: 0, bottom: 2, borderRadius: 6 },
+  lenderChartRate: { width: 36, fontSize: 12, fontWeight: '700', color: BRAND.accent, textAlign: 'right' },
+  chartLegend: { flexDirection: 'row', gap: 16, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F0F7F3' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendLabel: { fontSize: 11, color: '#5A7A63', fontWeight: '500' },
 });

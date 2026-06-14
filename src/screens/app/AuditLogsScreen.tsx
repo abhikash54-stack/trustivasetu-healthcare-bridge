@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +18,8 @@ import { fetchAuditLogs } from '../../services/auditLogService';
 import { formatDate } from '../../utils/format';
 import { usePermissionGuard } from '../../hooks/usePermissionGuard';
 
-const ENTITY_FILTERS = ['All', 'Lead', 'Clinic', 'User', 'Target'];
+const ENTITY_FILTERS = ['All', 'Lead', 'Clinic', 'User', 'Target', 'Region', 'Lender'];
+const ACTION_FILTERS = ['All', 'Create', 'Update', 'Delete', 'Status Change', 'Login', 'Logout'];
 
 const ACTION_COLORS: Record<string, string> = {
   CREATE: '#27AE60',
@@ -35,18 +38,32 @@ function actionColor(action: string): string {
   return '#5A7A63';
 }
 
+function actionApiValue(label: string): string | undefined {
+  if (label === 'All') return undefined;
+  return label.toUpperCase().replace(/ /g, '_');
+}
+
 export function AuditLogsScreen() {
   usePermissionGuard(['SUPER_ADMIN', 'ADMIN']);
   const [entityFilter, setEntityFilter] = useState('All');
+  const [actionFilter, setActionFilter] = useState('All');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showDateModal, setShowDateModal] = useState(false);
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
 
+  const hasDateFilter = !!(dateFrom || dateTo);
+
   const queryResult = useQuery({
-    queryKey: ['audit-logs', entityFilter, page],
+    queryKey: ['audit-logs', entityFilter, actionFilter, dateFrom, dateTo, page],
     queryFn: () =>
       fetchAuditLogs({
         page,
         entity: entityFilter !== 'All' ? entityFilter.toUpperCase() : undefined,
+        action: actionApiValue(actionFilter),
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
       }),
   }) as any;
 
@@ -59,25 +76,35 @@ export function AuditLogsScreen() {
 
   const hasMore = logs.length < total;
 
-  const handleFilterChange = (f: string) => {
-    setEntityFilter(f);
-    setPage(1);
-  };
+  const handleEntityFilter = (f: string) => { setEntityFilter(f); setPage(1); };
+  const handleActionFilter = (f: string) => { setActionFilter(f); setPage(1); };
+  const clearDateFilter = () => { setDateFrom(''); setDateTo(''); setPage(1); };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Audit Logs</Text>
-        <Text style={styles.headerSub}>{total} event{total !== 1 ? 's' : ''}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Audit Logs</Text>
+          <Text style={styles.headerSub}>{total} event{total !== 1 ? 's' : ''}</Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.dateFilterBtn, hasDateFilter && styles.dateFilterBtnActive]}
+          onPress={() => setShowDateModal(true)}
+        >
+          <MaterialIcons name="date-range" size={16} color={hasDateFilter ? '#FFF' : BRAND.primary} />
+          <Text style={[styles.dateFilterBtnText, hasDateFilter && { color: '#FFF' }]}>
+            {hasDateFilter ? 'Filtered' : 'Date'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Entity filter chips */}
-      <View style={styles.filterBar}>
+      <View style={[styles.filterBar, { paddingBottom: 6 }]}>
         {ENTITY_FILTERS.map((f) => (
           <TouchableOpacity
             key={f}
             style={[styles.filterChip, entityFilter === f && styles.filterChipActive]}
-            onPress={() => handleFilterChange(f)}
+            onPress={() => handleEntityFilter(f)}
           >
             <Text style={[styles.filterChipText, entityFilter === f && styles.filterChipTextActive]}>
               {f}
@@ -85,6 +112,70 @@ export function AuditLogsScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Action filter chips */}
+      <View style={[styles.filterBar, { borderTopWidth: 1, borderTopColor: '#F0F7F3', paddingTop: 6 }]}>
+        {ACTION_FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f}
+            style={[styles.filterChip, actionFilter === f && styles.filterChipActionActive]}
+            onPress={() => handleActionFilter(f)}
+          >
+            <Text style={[styles.filterChipText, actionFilter === f && styles.filterChipTextActive]}>
+              {f}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {hasDateFilter && (
+        <View style={styles.activeDateRow}>
+          <Text style={styles.activeDateText}>
+            {dateFrom && `From: ${dateFrom}`}{dateFrom && dateTo ? '  · ' : ''}{dateTo && `To: ${dateTo}`}
+          </Text>
+          <TouchableOpacity onPress={clearDateFilter}>
+            <MaterialIcons name="close" size={16} color="#E74C3C" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Date filter modal */}
+      <Modal visible={showDateModal} transparent animationType="slide" onRequestClose={() => setShowDateModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowDateModal(false)} />
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Filter by Date Range</Text>
+          <Text style={styles.modalHint}>Format: YYYY-MM-DD</Text>
+          <Text style={styles.modalFieldLabel}>From Date</Text>
+          <TextInput
+            style={styles.modalInput}
+            value={dateFrom}
+            onChangeText={setDateFrom}
+            placeholder="2025-01-01"
+            placeholderTextColor="#B0C8B8"
+            keyboardType="numbers-and-punctuation"
+            maxLength={10}
+          />
+          <Text style={styles.modalFieldLabel}>To Date</Text>
+          <TextInput
+            style={styles.modalInput}
+            value={dateTo}
+            onChangeText={setDateTo}
+            placeholder="2025-12-31"
+            placeholderTextColor="#B0C8B8"
+            keyboardType="numbers-and-punctuation"
+            maxLength={10}
+          />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={styles.clearBtn} onPress={() => { clearDateFilter(); setShowDateModal(false); }}>
+              <Text style={styles.clearBtnText}>Clear</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.applyBtn} onPress={() => { setPage(1); setShowDateModal(false); }}>
+              <Text style={styles.applyBtnText}>Apply</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {isLoading && page === 1 ? (
         <View style={styles.centered}>
@@ -171,7 +262,7 @@ const styles = StyleSheet.create({
   errorText: { color: '#E74C3C', fontSize: 15, fontWeight: '600', marginTop: 12 },
   retryBtn: { marginTop: 16, backgroundColor: BRAND.primary, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10 },
   retryText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
-  header: { backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E8F0EC' },
+  header: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E8F0EC' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
   headerSub: { fontSize: 13, color: '#666', marginTop: 2 },
   filterBar: {
@@ -228,4 +319,49 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   loadMoreText: { color: BRAND.primary, fontWeight: '600', fontSize: 14 },
+  filterChipActionActive: { backgroundColor: '#1A5276', borderColor: '#1A5276' },
+  dateFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: BRAND.primary,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  dateFilterBtnActive: { backgroundColor: BRAND.primary },
+  dateFilterBtnText: { fontSize: 12, fontWeight: '700', color: BRAND.primary },
+  activeDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: BRAND.primaryLight,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8F0EC',
+  },
+  activeDateText: { fontSize: 12, color: BRAND.primaryDark, fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+  modalHandle: { width: 40, height: 4, backgroundColor: '#C8DFD0', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A2D1E', marginBottom: 4 },
+  modalHint: { fontSize: 12, color: '#5A7A63', marginBottom: 16 },
+  modalFieldLabel: { fontSize: 13, fontWeight: '600', color: '#333', marginBottom: 6 },
+  modalInput: {
+    backgroundColor: '#F0F7F3',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#1A2D1E',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  clearBtn: { flex: 1, backgroundColor: '#F0F7F3', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  clearBtnText: { fontSize: 15, fontWeight: '700', color: '#5A7A63' },
+  applyBtn: { flex: 2, backgroundColor: BRAND.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  applyBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 });

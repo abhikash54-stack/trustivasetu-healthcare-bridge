@@ -26,6 +26,7 @@ import { usePermissionGuard } from '../../hooks/usePermissionGuard';
 import {
   listUsers,
   createUser,
+  updateUser,
   updateUserRole,
   updateUserStatus,
   adminResetPassword,
@@ -72,6 +73,15 @@ function isActive(user: ManagedUser): boolean {
   return user.status === 'ACTIVE';
 }
 
+interface EditForm {
+  name: string;
+  email: string;
+  phone: string;
+  regionIds: string[];
+}
+
+const EMPTY_EDIT: EditForm = { name: '', email: '', phone: '', regionIds: [] };
+
 export function UserManagementScreen() {
   const insets = useSafeAreaInsets();
   usePermissionGuard(['SUPER_ADMIN', 'ADMIN']);
@@ -79,8 +89,10 @@ export function UserManagementScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [form, setForm] = useState<AddForm>(EMPTY_FORM);
+  const [editForm, setEditForm] = useState<EditForm>(EMPTY_EDIT);
   const [resetPassword, setResetPassword] = useState('');
 
   const [refreshing, setRefreshing] = useState(false);
@@ -89,6 +101,16 @@ export function UserManagementScreen() {
 
   const toggleRegion = (regionId: string) => {
     setForm((p) => {
+      const already = p.regionIds.includes(regionId);
+      return {
+        ...p,
+        regionIds: already ? p.regionIds.filter((id) => id !== regionId) : [...p.regionIds, regionId],
+      };
+    });
+  };
+
+  const toggleEditRegion = (regionId: string) => {
+    setEditForm((p) => {
       const already = p.regionIds.includes(regionId);
       return {
         ...p,
@@ -152,6 +174,20 @@ export function UserManagementScreen() {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ userId, payload }: { userId: string; payload: { name?: string; email?: string; phone?: string; regionIds?: string[] } }) =>
+      updateUser(userId, payload),
+    onSuccess: (updated: ManagedUser) => {
+      refetch();
+      setShowEditModal(false);
+      Alert.alert('Updated', `${updated.name}'s profile has been updated.`);
+      setSelectedUser(null);
+    },
+    onError: (error: any) => {
+      Alert.alert('Error', error?.response?.data?.message ?? 'Could not update user.');
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteUser,
     onSuccess: () => { refetch(); },
@@ -200,6 +236,26 @@ export function UserManagementScreen() {
     );
   };
 
+  const handleEditUser = (user: ManagedUser) => {
+    setSelectedUser(user);
+    setEditForm({ name: user.name, email: user.email, phone: user.phone, regionIds: [] });
+    setShowEditModal(true);
+  };
+
+  const submitEdit = () => {
+    if (!editForm.name.trim()) return Alert.alert('Required', "Enter the user's full name.");
+    if (!editForm.email.trim() || !editForm.email.includes('@'))
+      return Alert.alert('Required', 'Enter a valid email address.');
+    if (!selectedUser) return;
+    const payload: { name?: string; email?: string; phone?: string; regionIds?: string[] } = {
+      name: editForm.name.trim(),
+      email: editForm.email.trim(),
+      phone: editForm.phone.trim(),
+    };
+    if (editForm.regionIds.length > 0) payload.regionIds = editForm.regionIds;
+    editMutation.mutate({ userId: selectedUser.id, payload });
+  };
+
   const handleResetPassword = (user: ManagedUser) => {
     setSelectedUser(user);
     setResetPassword('');
@@ -234,6 +290,11 @@ export function UserManagementScreen() {
       </View>
 
       <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => handleEditUser(item)}>
+          <MaterialIcons name="edit" size={16} color="#2980B9" />
+          <Text style={[styles.actionLabel, { color: '#2980B9' }]}>Edit</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => { setSelectedUser(item); setShowRoleModal(true); }}
@@ -477,6 +538,74 @@ export function UserManagementScreen() {
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit User — {selectedUser?.name}</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <MaterialIcons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <FormInput
+              label="Full Name *"
+              placeholder="Full name"
+              value={editForm.name}
+              onChangeText={(v) => setEditForm((p) => ({ ...p, name: v }))}
+            />
+            <FormInput
+              label="Email *"
+              placeholder="user@trustivasetu.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={editForm.email}
+              onChangeText={(v) => setEditForm((p) => ({ ...p, email: v }))}
+            />
+            <FormInput
+              label="Phone"
+              placeholder="10-digit mobile number"
+              keyboardType="phone-pad"
+              value={editForm.phone}
+              onChangeText={(v) => setEditForm((p) => ({ ...p, phone: v }))}
+            />
+            {regions.length > 0 && (
+              <>
+                <Text style={styles.rolePickerLabel}>Region Assignment (leave empty to keep existing)</Text>
+                <View style={styles.roleGrid}>
+                  {regions.map((region) => {
+                    const selected = editForm.regionIds.includes(region.id);
+                    return (
+                      <TouchableOpacity
+                        key={region.id}
+                        style={[styles.roleChip, selected && { backgroundColor: '#0E6655', borderColor: '#0E6655' }]}
+                        onPress={() => toggleEditRegion(region.id)}
+                      >
+                        <Text style={[styles.roleChipText, selected && styles.roleChipTextActive]}>
+                          {region.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+            <View style={{ marginTop: 12 }}>
+              <PrimaryButton
+                label={(editMutation as any).isPending ? 'Saving...' : 'Save Changes'}
+                onPress={submitEdit}
+                disabled={(editMutation as any).isPending}
+              />
+            </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
     </View>

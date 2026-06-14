@@ -1,14 +1,15 @@
-import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View, Text as RNText } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View, Text as RNText } from 'react-native';
 import { useState } from 'react';
 import { ListSkeleton } from '../../components/SkeletonLoader';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 
 import { fetchDashboard } from '../../services/dashboardService';
+import { fetchAttendanceSummary, checkIn, checkOut, getCurrentLocation } from '../../services/attendanceService';
 import { DashboardMetrics, RecentLead } from '../../types/auth';
 import { formatCurrency, statusColor, formatStatus } from '../../utils/format';
 import { useAuth } from '../../hooks/useAuth';
@@ -86,6 +87,8 @@ export function DashboardScreen() {
   const fullUser = useSelector((s: RootState) => s.auth.user);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [punchLoading, setPunchLoading] = useState(false);
+
   const dashResult = useQuery<DashboardMetrics>({
     queryKey: ['dashboard'],
     queryFn: fetchDashboard,
@@ -93,9 +96,40 @@ export function DashboardScreen() {
   const metrics: DashboardMetrics | undefined = dashResult.data;
   const isLoading: boolean = dashResult.isLoading;
 
+  const attendResult = useQuery({
+    queryKey: ['attendance', 'summary'],
+    queryFn: fetchAttendanceSummary,
+  }) as any;
+  const attend = attendResult.data;
+
+  const checkinMutation = useMutation({
+    mutationFn: checkIn,
+    onSuccess: () => { (attendResult.refetch as () => void)(); },
+  });
+  const checkoutMutation = useMutation({
+    mutationFn: checkOut,
+    onSuccess: () => { (attendResult.refetch as () => void)(); },
+  });
+
+  const handlePunch = async () => {
+    const isIn = attend?.todayStatus === 'CHECKED_IN';
+    const isOut = attend?.todayStatus === 'CHECKED_OUT';
+    if (isOut) return;
+    setPunchLoading(true);
+    try {
+      const loc = await getCurrentLocation();
+      if (isIn) { checkoutMutation.mutate(loc); } else { checkinMutation.mutate(loc); }
+    } finally {
+      setPunchLoading(false);
+    }
+  };
+
   const handleRefresh = () => {
     setRefreshing(true);
-    (dashResult.refetch as () => Promise<unknown>)().finally(() => setRefreshing(false));
+    Promise.all([
+      (dashResult.refetch as () => Promise<unknown>)(),
+      (attendResult.refetch as () => Promise<unknown>)(),
+    ]).finally(() => setRefreshing(false));
   };
 
   const { occasions, shouldShow, dismiss } = useCelebration();
@@ -128,6 +162,87 @@ export function DashboardScreen() {
             <MaterialIcons name="celebration" size={24} color="#F39C12" />
           </View>
         )}
+
+        {/* Attendance Widget — first card on dashboard */}
+        <TouchableOpacity
+          style={styles.attendanceCard}
+          onPress={() => navigation.navigate('Attendance')}
+          activeOpacity={0.9}
+        >
+          <View style={styles.attendanceTop}>
+            <View>
+              <RNText style={styles.attendanceTitle}>Today's Attendance</RNText>
+              <RNText style={styles.attendanceDate}>{new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</RNText>
+            </View>
+            <View style={[styles.attendanceBadge, {
+              backgroundColor: attend?.todayStatus === 'CHECKED_OUT' ? '#27AE60' + '22'
+                : attend?.todayStatus === 'CHECKED_IN' ? BRAND.accent + '22' : '#E74C3C22',
+            }]}>
+              <RNText style={[styles.attendanceBadgeText, {
+                color: attend?.todayStatus === 'CHECKED_OUT' ? '#27AE60'
+                  : attend?.todayStatus === 'CHECKED_IN' ? BRAND.accent : '#E74C3C',
+              }]}>
+                {attend?.todayStatus === 'CHECKED_OUT' ? 'Done' : attend?.todayStatus === 'CHECKED_IN' ? 'Punched In' : 'Not Marked'}
+              </RNText>
+            </View>
+          </View>
+
+          <View style={styles.attendanceTimes}>
+            <View style={styles.attendanceTimeBlock}>
+              <MaterialIcons name="login" size={14} color={BRAND.primary} />
+              <RNText style={styles.attendanceTimeLabel}>In</RNText>
+              <RNText style={styles.attendanceTimeValue}>
+                {attend?.checkInTime ? attend.checkInTime.slice(11, 16) : '—'}
+              </RNText>
+            </View>
+            <View style={styles.attendanceTimeDivider} />
+            <View style={styles.attendanceTimeBlock}>
+              <MaterialIcons name="logout" size={14} color="#E74C3C" />
+              <RNText style={styles.attendanceTimeLabel}>Out</RNText>
+              <RNText style={styles.attendanceTimeValue}>
+                {attend?.checkOutTime ? attend.checkOutTime.slice(11, 16) : '—'}
+              </RNText>
+            </View>
+            <View style={styles.attendanceTimeDivider} />
+            <View style={styles.attendanceTimeBlock}>
+              <MaterialIcons name="schedule" size={14} color="#8E44AD" />
+              <RNText style={styles.attendanceTimeLabel}>Hours</RNText>
+              <RNText style={styles.attendanceTimeValue}>{attend?.workingHours ?? '—'}</RNText>
+            </View>
+            <View style={styles.attendanceTimeDivider} />
+            <View style={styles.attendanceTimeBlock}>
+              <MaterialIcons name="trending-up" size={14} color={BRAND.accent} />
+              <RNText style={styles.attendanceTimeLabel}>Month</RNText>
+              <RNText style={styles.attendanceTimeValue}>{attend?.attendancePercentage ?? 0}%</RNText>
+            </View>
+          </View>
+
+          {attend?.todayStatus !== 'CHECKED_OUT' && (
+            <TouchableOpacity
+              style={[
+                styles.attendancePunchBtn,
+                attend?.todayStatus === 'CHECKED_IN' && styles.attendancePunchBtnOut,
+              ]}
+              onPress={(e) => { e.stopPropagation(); handlePunch(); }}
+              disabled={punchLoading || attendResult.isLoading}
+            >
+              {punchLoading ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <>
+                  <MaterialIcons
+                    name={attend?.todayStatus === 'CHECKED_IN' ? 'logout' : 'fingerprint'}
+                    size={18}
+                    color="#FFF"
+                  />
+                  <RNText style={styles.attendancePunchText}>
+                    {attend?.todayStatus === 'CHECKED_IN' ? 'Punch Out' : 'Punch In'}
+                  </RNText>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
 
         {/* Welcome Banner */}
         <View style={[styles.banner, todayOccasion && styles.bannerCelebration]}>
@@ -573,4 +688,49 @@ const styles = StyleSheet.create({
   },
   recentStatusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
   recentAmount: { fontSize: 11, color: '#5A7A63', fontWeight: '600' },
+  attendanceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: BRAND.primary,
+    elevation: 3,
+    shadowColor: BRAND.primary,
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  attendanceTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  attendanceTitle: { fontSize: 14, fontWeight: '700', color: '#1A2D1E' },
+  attendanceDate: { fontSize: 11, color: '#5A7A63', marginTop: 2 },
+  attendanceBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  attendanceBadgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
+  attendanceTimes: {
+    flexDirection: 'row',
+    backgroundColor: '#F9FDFB',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 12,
+  },
+  attendanceTimeBlock: { flex: 1, alignItems: 'center', gap: 2 },
+  attendanceTimeDivider: { width: 1, backgroundColor: '#E8F0EC' },
+  attendanceTimeLabel: { fontSize: 9, color: '#5A7A63', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.3 },
+  attendanceTimeValue: { fontSize: 14, fontWeight: '800', color: '#1A2D1E' },
+  attendancePunchBtn: {
+    backgroundColor: BRAND.primary,
+    borderRadius: 10,
+    height: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  attendancePunchBtnOut: { backgroundColor: '#E74C3C' },
+  attendancePunchText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 });

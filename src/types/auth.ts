@@ -206,6 +206,19 @@ export interface AttendanceSummary {
   todayStatus: 'CHECKED_IN' | 'CHECKED_OUT' | 'NOT_MARKED';
   checkInTime: string | null;
   checkOutTime: string | null;
+  lateMarks: number;
+  halfDays: number;
+  missedPunches: number;
+  weeklyPresent: number;
+  weeklyTotal: number;
+  monthlyPresent: number;
+  monthlyTotal: number;
+  attendancePercentage: number;
+  breakDuration: string | null;
+  workingHours: string | null;
+  checkInLatitude?: number;
+  checkInLongitude?: number;
+  checkInAddress?: string;
 }
 
 export interface LeaveQuota {
