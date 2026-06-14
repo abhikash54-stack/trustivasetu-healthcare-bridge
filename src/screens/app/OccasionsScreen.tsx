@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   FlatList,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -9,17 +10,22 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
+import { useQuery } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootState } from '../../store';
 import { updateUser } from '../../store/slices/authSlice';
 import { BRAND } from '../../theme/theme';
-import { UserProfile, CustomOccasion } from '../../types/auth';
+import { UserProfile, CustomOccasion, ManagedUser } from '../../types/auth';
+import { listUsers } from '../../services/userManagementService';
 
 const STORAGE_KEY = '@trustiva:user';
+
+const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
 
 function SectionTitle({ text }: { text: string }) {
   return <RNText style={styles.sectionTitle}>{text}</RNText>;
@@ -69,6 +75,42 @@ function formatISO(iso: string): string {
   if (!iso) return '';
   const d = new Date(iso);
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function daysUntilMD(md: string): number {
+  const [mm, dd] = md.split('-').map(Number);
+  const now = new Date();
+  const thisYear = new Date(now.getFullYear(), mm - 1, dd);
+  const nextYear = new Date(now.getFullYear() + 1, mm - 1, dd);
+  const target = thisYear >= now ? thisYear : nextYear;
+  return Math.ceil((target.getTime() - now.getTime()) / 86400000);
+}
+
+function getUpcomingTeamAnniversaries(users: ManagedUser[], days: number) {
+  const now = new Date();
+  const results: { user: ManagedUser; daysAway: number; years: number }[] = [];
+
+  for (const u of users) {
+    if (!u.createdAt) continue;
+    const joined = new Date(u.createdAt);
+    if (isNaN(joined.getTime())) continue;
+    const thisYear = new Date(now.getFullYear(), joined.getMonth(), joined.getDate());
+    const nextYear = new Date(now.getFullYear() + 1, joined.getMonth(), joined.getDate());
+    const target = thisYear >= now ? thisYear : nextYear;
+    const daysAway = Math.ceil((target.getTime() - now.getTime()) / 86400000);
+    if (daysAway <= days) {
+      const years = target.getFullYear() - joined.getFullYear();
+      results.push({ user: u, daysAway, years });
+    }
+  }
+
+  return results.sort((a, b) => a.daysAway - b.daysAway);
+}
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 interface EditModalProps {
@@ -129,15 +171,89 @@ function EditModal({ visible, title, format, initial, onSave, onClear, onClose }
   );
 }
 
+function TeamAnniversaryCard({
+  user,
+  daysAway,
+  years,
+}: {
+  user: ManagedUser;
+  daysAway: number;
+  years: number;
+}) {
+  const isToday = daysAway === 0;
+  const isSoon = daysAway <= 3;
+  const accentColor = isToday ? '#27AE60' : isSoon ? '#F39C12' : BRAND.primary;
+
+  const openWish = () => {
+    const greeting =
+      years === 1
+        ? `Hi ${user.name.split(' ')[0]}! Congratulations on completing your 1st year with TrustivaSetu. Your contribution is valued! 🌟`
+        : `Hi ${user.name.split(' ')[0]}! Congratulations on your ${ordinal(years)} work anniversary at TrustivaSetu. Thank you for your dedication! 🎊`;
+
+    if (user.phone) {
+      const url = `sms:${user.phone}?body=${encodeURIComponent(greeting)}`;
+      Linking.openURL(url).catch(() => Alert.alert('Could not open SMS', 'Please copy the greeting manually.'));
+    } else {
+      Alert.alert('Greeting', greeting);
+    }
+  };
+
+  return (
+    <View style={[styles.teamCard, isToday && styles.teamCardToday]}>
+      <View style={[styles.teamAvatar, { backgroundColor: accentColor + '22' }]}>
+        <RNText style={[styles.teamAvatarText, { color: accentColor }]}>
+          {user.name.charAt(0).toUpperCase()}
+        </RNText>
+      </View>
+      <View style={{ flex: 1 }}>
+        <View style={styles.teamNameRow}>
+          <RNText style={styles.teamName}>{user.name}</RNText>
+          {isToday && (
+            <View style={styles.todayBadge}>
+              <RNText style={styles.todayBadgeText}>TODAY</RNText>
+            </View>
+          )}
+        </View>
+        <RNText style={[styles.teamAnniversaryLabel, { color: accentColor }]}>
+          🌟 {ordinal(years)} Work Anniversary
+          {isToday ? ' — Today!' : daysAway === 1 ? ' — Tomorrow' : ` — in ${daysAway} days`}
+        </RNText>
+        <RNText style={styles.teamRole}>{user.role.replace(/_/g, ' ')}</RNText>
+      </View>
+      <TouchableOpacity
+        style={[styles.wishBtn, { borderColor: accentColor }]}
+        onPress={openWish}
+        activeOpacity={0.7}
+      >
+        <MaterialIcons name="send" size={14} color={accentColor} />
+        <RNText style={[styles.wishBtnText, { color: accentColor }]}>Wish</RNText>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+type MainTab = 'my' | 'team';
+
 export function OccasionsScreen() {
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const user = useSelector((s: RootState) => s.auth.user) as UserProfile | null;
+  const isAdmin = ADMIN_ROLES.includes(user?.role ?? '');
 
+  const [mainTab, setMainTab] = useState<MainTab>('my');
   const [editField, setEditField] = useState<'birthday' | 'joiningDate' | 'marriageAnniversary' | null>(null);
   const [addCustomVisible, setAddCustomVisible] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customDate, setCustomDate] = useState('');
+
+  const usersQuery = useQuery({
+    queryKey: ['users', 'for-occasions'],
+    queryFn: listUsers,
+    enabled: isAdmin && mainTab === 'team',
+    staleTime: 5 * 60 * 1000,
+  }) as any;
+  const allUsers: ManagedUser[] = usersQuery.data ?? [];
+  const upcomingAnniversaries = getUpcomingTeamAnniversaries(allUsers, 30);
 
   const updateAndPersist = async (updates: Partial<UserProfile>) => {
     if (!user) return;
@@ -189,12 +305,8 @@ export function OccasionsScreen() {
 
   const activeConfig = editField ? editConfig[editField] : null;
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
-      showsVerticalScrollIndicator={false}
-    >
+  const myOccasionsContent = (
+    <>
       <View style={styles.headerCard}>
         <RNText style={styles.headerEmoji}>🎉</RNText>
         <RNText style={styles.headerTitle}>Special Occasions</RNText>
@@ -271,9 +383,105 @@ export function OccasionsScreen() {
         <MaterialIcons name="info-outline" size={16} color={BRAND.primary} style={{ marginTop: 1 }} />
         <RNText style={styles.infoText}>
           On your special days, you'll see a personalised celebration with confetti when you open the app.
-          Colleagues with Admin access can also send you greetings.
+          {isAdmin ? ' Use the Team tab to see and wish your colleagues.' : ''}
         </RNText>
       </View>
+    </>
+  );
+
+  const teamContent = (
+    <>
+      <View style={styles.teamHeader}>
+        <MaterialIcons name="people" size={20} color={BRAND.primary} />
+        <View style={{ flex: 1 }}>
+          <RNText style={styles.teamHeaderTitle}>Team Work Anniversaries</RNText>
+          <RNText style={styles.teamHeaderSub}>Next 30 days · tap Wish to send a greeting via SMS</RNText>
+        </View>
+      </View>
+
+      {usersQuery.isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color={BRAND.primary} />
+          <RNText style={styles.loadingText}>Loading team data...</RNText>
+        </View>
+      ) : usersQuery.isError ? (
+        <View style={styles.centered}>
+          <MaterialIcons name="cloud-off" size={36} color="#C8DFD0" />
+          <RNText style={styles.errorText}>Could not load team data</RNText>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            onPress={() => (usersQuery.refetch as () => void)()}
+          >
+            <RNText style={styles.retryBtnText}>Retry</RNText>
+          </TouchableOpacity>
+        </View>
+      ) : upcomingAnniversaries.length === 0 ? (
+        <View style={styles.emptyTeam}>
+          <MaterialIcons name="event-available" size={40} color="#C8DFD0" />
+          <RNText style={styles.emptyTeamTitle}>No upcoming anniversaries</RNText>
+          <RNText style={styles.emptyTeamSub}>No work anniversaries in the next 30 days.</RNText>
+        </View>
+      ) : (
+        <>
+          <View style={styles.teamSummaryRow}>
+            <View style={styles.teamSummaryChip}>
+              <RNText style={styles.teamSummaryCount}>{upcomingAnniversaries.length}</RNText>
+              <RNText style={styles.teamSummaryLabel}>Upcoming</RNText>
+            </View>
+            <View style={[styles.teamSummaryChip, { borderColor: '#27AE60' }]}>
+              <RNText style={[styles.teamSummaryCount, { color: '#27AE60' }]}>
+                {upcomingAnniversaries.filter((a) => a.daysAway === 0).length}
+              </RNText>
+              <RNText style={styles.teamSummaryLabel}>Today</RNText>
+            </View>
+            <View style={[styles.teamSummaryChip, { borderColor: '#F39C12' }]}>
+              <RNText style={[styles.teamSummaryCount, { color: '#F39C12' }]}>
+                {upcomingAnniversaries.filter((a) => a.daysAway <= 7).length}
+              </RNText>
+              <RNText style={styles.teamSummaryLabel}>This Week</RNText>
+            </View>
+          </View>
+          {upcomingAnniversaries.map(({ user: u, daysAway, years }) => (
+            <TeamAnniversaryCard key={u.id} user={u} daysAway={daysAway} years={years} />
+          ))}
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: BRAND.background }}>
+      {/* Main tab bar — only shown to admins */}
+      {isAdmin && (
+        <View style={styles.mainTabBar}>
+          <TouchableOpacity
+            style={[styles.mainTab, mainTab === 'my' && styles.mainTabActive]}
+            onPress={() => setMainTab('my')}
+          >
+            <MaterialIcons name="person" size={16} color={mainTab === 'my' ? BRAND.primary : '#5A7A63'} />
+            <RNText style={[styles.mainTabLabel, mainTab === 'my' && styles.mainTabLabelActive]}>
+              My Occasions
+            </RNText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.mainTab, mainTab === 'team' && styles.mainTabActive]}
+            onPress={() => setMainTab('team')}
+          >
+            <MaterialIcons name="people" size={16} color={mainTab === 'team' ? BRAND.primary : '#5A7A63'} />
+            <RNText style={[styles.mainTabLabel, mainTab === 'team' && styles.mainTabLabelActive]}>
+              Team
+            </RNText>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {mainTab === 'my' || !isAdmin ? myOccasionsContent : teamContent}
+      </ScrollView>
 
       {activeConfig && (
         <EditModal
@@ -319,13 +527,32 @@ export function OccasionsScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BRAND.background },
   content: { padding: 20, gap: 16 },
+  mainTabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8F0EC',
+  },
+  mainTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  mainTabActive: { borderBottomColor: BRAND.primary },
+  mainTabLabel: { fontSize: 13, fontWeight: '600', color: '#5A7A63' },
+  mainTabLabelActive: { color: BRAND.primary },
   headerCard: {
     backgroundColor: BRAND.primary,
     borderRadius: 20,
@@ -412,6 +639,96 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   infoText: { flex: 1, fontSize: 13, color: BRAND.primaryDark, lineHeight: 20, fontWeight: '500' },
+  // Team tab styles
+  teamHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: BRAND.primaryLight,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 4,
+  },
+  teamHeaderTitle: { fontSize: 15, fontWeight: '700', color: BRAND.primaryDark },
+  teamHeaderSub: { fontSize: 12, color: BRAND.primary, marginTop: 3 },
+  teamSummaryRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 8,
+  },
+  teamSummaryChip: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: BRAND.primary,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  teamSummaryCount: { fontSize: 20, fontWeight: '800', color: BRAND.primary },
+  teamSummaryLabel: { fontSize: 10, color: '#5A7A63', fontWeight: '600', marginTop: 2 },
+  teamCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    marginBottom: 8,
+  },
+  teamCardToday: {
+    borderWidth: 1.5,
+    borderColor: '#27AE60',
+    backgroundColor: '#F0FFF7',
+  },
+  teamAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teamAvatarText: { fontSize: 18, fontWeight: '800' },
+  teamNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  teamName: { fontSize: 14, fontWeight: '700', color: '#1A2D1E' },
+  todayBadge: {
+    backgroundColor: '#27AE60',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  todayBadgeText: { fontSize: 9, fontWeight: '800', color: '#FFF', letterSpacing: 0.5 },
+  teamAnniversaryLabel: { fontSize: 12, fontWeight: '600', marginTop: 2 },
+  teamRole: { fontSize: 11, color: '#5A7A63', marginTop: 2 },
+  wishBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  wishBtnText: { fontSize: 12, fontWeight: '700' },
+  centered: { alignItems: 'center', justifyContent: 'center', paddingVertical: 32, gap: 10 },
+  loadingText: { color: '#5A7A63', fontSize: 13 },
+  errorText: { color: '#E74C3C', fontSize: 14, fontWeight: '600' },
+  retryBtn: { backgroundColor: BRAND.primary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 8 },
+  retryBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
+  emptyTeam: { alignItems: 'center', paddingVertical: 32, gap: 10 },
+  emptyTeamTitle: { fontSize: 15, fontWeight: '700', color: '#1A2D1E' },
+  emptyTeamSub: { fontSize: 13, color: '#5A7A63', textAlign: 'center' },
+  // Modals
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',

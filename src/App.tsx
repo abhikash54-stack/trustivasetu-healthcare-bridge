@@ -17,7 +17,7 @@ import { clearUser } from './services/storageService';
 import { logout } from './services/authService';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OfflineBanner } from './components/OfflineBanner';
-import { scheduleOccasionNotifications } from './services/notificationScheduler';
+import { scheduleOccasionNotifications, scheduleAttendanceDailyReminders } from './services/notificationScheduler';
 
 function AppContent() {
   const dispatch = useDispatch();
@@ -29,6 +29,7 @@ function AppContent() {
   useEffect(() => {
     if (user) {
       scheduleOccasionNotifications(user).catch(() => {});
+      scheduleAttendanceDailyReminders().catch(() => {});
     }
   }, [user]);
 
