@@ -29,7 +29,7 @@ export async function fetchAuditLogs(params?: FetchAuditLogsParams): Promise<Aud
   const p: any = { page: params?.page ?? 1, pageSize: 30 };
   if (params?.entity) p.entity = params.entity;
   if (params?.action) p.action = params.action;
-  const response = await (apiClient as any).get('/audit-logs', { params: p });
+  const response = await apiClient.get('/audit-logs', { params: p });
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return {
     logs: raw.map(normalizeLog),

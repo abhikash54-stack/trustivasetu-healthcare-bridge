@@ -1,15 +1,19 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity, Text as RNText, ActivityIndicator } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View, TouchableOpacity, Text as RNText, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 
-import { fetchClinicById } from '../../services/clinicService';
+import { fetchClinicById, deleteClinic } from '../../services/clinicService';
 import { ClinicDetail } from '../../types/auth';
 import { Text, Box } from '../../theme/theme';
 import { SectionCard } from '../../components/SectionCard';
 import { BRAND } from '../../theme/theme';
 import { formatCurrency, statusColor, formatStatus } from '../../utils/format';
+import { RootState } from '../../store';
+
+const DELETE_ROLES = ['SUPER_ADMIN', 'ADMIN'];
 
 interface ClinicDetailsScreenProps {
   route: { params: { clinicId: string } };
@@ -18,6 +22,33 @@ interface ClinicDetailsScreenProps {
 export function ClinicDetailsScreen({ route }: ClinicDetailsScreenProps) {
   const { clinicId } = route.params;
   const navigation = useNavigation<any>();
+  const role = useSelector((s: RootState) => s.auth.user?.role ?? '');
+  const canDelete = DELETE_ROLES.includes(role);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteClinic(clinicId),
+    onSuccess: () => {
+      navigation.goBack();
+    },
+    onError: (error: any) => {
+      Alert.alert('Error', error?.response?.data?.error ?? 'Could not delete clinic.');
+    },
+  });
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete Partner',
+      'This will permanently remove this channel partner. All associated leads will be retained. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteMutation.mutate(),
+        },
+      ],
+    );
+  };
 
   const queryResult = useQuery({
     queryKey: ['clinic', clinicId],
@@ -65,14 +96,28 @@ export function ClinicDetailsScreen({ route }: ClinicDetailsScreenProps) {
         </View>
       </View>
 
-      {/* Assign RM button */}
-      <TouchableOpacity
-        style={styles.assignRmBtn}
-        onPress={() => navigation.navigate('RMAssignment', { clinicId: clinic.id })}
-      >
-        <MaterialIcons name="person-add" size={18} color={BRAND.primary} />
-        <RNText style={styles.assignRmText}>Assign Regional Manager</RNText>
-      </TouchableOpacity>
+      {/* Action row */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.actionBtnOutline]}
+          onPress={() => navigation.navigate('RMAssignment', { clinicId: clinic.id })}
+        >
+          <MaterialIcons name="person-add" size={16} color={BRAND.primary} />
+          <RNText style={styles.actionBtnText}>Assign RM</RNText>
+        </TouchableOpacity>
+        {canDelete && (
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.actionBtnDanger]}
+            onPress={confirmDelete}
+            disabled={deleteMutation.isPending}
+          >
+            <MaterialIcons name="delete" size={16} color="#E74C3C" />
+            <RNText style={[styles.actionBtnText, { color: '#E74C3C' }]}>
+              {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+            </RNText>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <SectionCard title="Partner Information">
         <DetailRow label="Assigned RM" value={clinic.assignedRM || 'Not assigned'} />
@@ -187,18 +232,21 @@ const styles = StyleSheet.create({
   location: { fontSize: 13, color: '#5A7A63', marginTop: 4, marginBottom: 12 },
   statusBadge: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
   statusText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.3 },
-  assignRmBtn: {
+  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  actionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
+    padding: 12,
     borderWidth: 1.5,
-    borderColor: BRAND.primary,
   },
-  assignRmText: { fontSize: 14, fontWeight: '600', color: BRAND.primary },
+  actionBtnOutline: { borderColor: BRAND.primary },
+  actionBtnDanger: { borderColor: '#E74C3C' },
+  actionBtnText: { fontSize: 13, fontWeight: '600', color: BRAND.primary },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

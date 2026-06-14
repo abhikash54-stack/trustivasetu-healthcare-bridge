@@ -1,5 +1,6 @@
 import {
   FlatList,
+  RefreshControl,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -7,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -24,6 +26,8 @@ const TYPE_ICON: Record<string, string> = {
   LEAVE: 'event-note',
   APPROVAL: 'check-circle-outline',
   SYSTEM: 'notifications',
+  CELEBRATION: 'celebration',
+  OCCASION: 'emoji-events',
 };
 
 const TYPE_COLOR: Record<string, string> = {
@@ -32,6 +36,8 @@ const TYPE_COLOR: Record<string, string> = {
   LEAVE: '#F39C12',
   APPROVAL: '#27AE60',
   SYSTEM: '#95A5A6',
+  CELEBRATION: '#E91E63',
+  OCCASION: '#9B59B6',
 };
 
 function NotificationCard({
@@ -89,7 +95,8 @@ export function NotificationsScreen() {
   const notifications: Notification[] = queryResult.data ?? [];
   const isLoading: boolean = queryResult.isLoading;
   const isError: boolean = queryResult.isError;
-  const refetch = () => (queryResult.refetch as () => Promise<any>)();
+  const [refreshing, setRefreshing] = useState(false);
+  const refetch = () => (queryResult.refetch as () => Promise<any>)().finally(() => setRefreshing(false));
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -164,6 +171,13 @@ export function NotificationsScreen() {
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => { setRefreshing(true); refetch(); }}
+              tintColor={BRAND.primary}
+            />
+          }
         />
       )}
     </View>

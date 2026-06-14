@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BRAND } from '../../theme/theme';
+import { downloadAndShareExport, ExportType } from '../../utils/nativeExport';
 import { fetchDashboard } from '../../services/dashboardService';
 import {
   fetchMonthlyReport,
@@ -189,6 +190,7 @@ function SummaryTab({ data }: { data: DashboardMetrics | undefined }) {
           </View>
         </SectionCard>
       )}
+      <ExportButton exportType="dashboard" label="Dashboard" />
     </>
   );
 }
@@ -200,20 +202,23 @@ function MonthlyTab() {
   if (qr.isError) return <ErrorBox onRetry={() => (qr.refetch as () => void)()} />;
   if (data.length === 0) return <EmptyBox icon="date-range" message="No monthly data" />;
   return (
-    <SectionCard title="Monthly Breakdown (6 months)">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View>
-          <TableHeader cols={['Period', 'Leads', 'Apprvd', 'Disb', 'Rate']} />
-          {data.map((r, i) => (
-            <TableRow
-              key={r.period}
-              highlight={i % 2 === 0}
-              cells={[r.month || r.period, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`]}
-            />
-          ))}
-        </View>
-      </ScrollView>
-    </SectionCard>
+    <>
+      <SectionCard title="Monthly Breakdown (6 months)">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View>
+            <TableHeader cols={['Period', 'Leads', 'Apprvd', 'Disb', 'Rate']} />
+            {data.map((r, i) => (
+              <TableRow
+                key={r.period}
+                highlight={i % 2 === 0}
+                cells={[r.month || r.period, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`]}
+              />
+            ))}
+          </View>
+        </ScrollView>
+      </SectionCard>
+      <ExportButton exportType="leads" label="Leads" />
+    </>
   );
 }
 
@@ -224,20 +229,23 @@ function RegionTab() {
   if (qr.isError) return <ErrorBox onRetry={() => (qr.refetch as () => void)()} />;
   if (data.length === 0) return <EmptyBox icon="map" message="No region data" />;
   return (
-    <SectionCard title="Region-wise Performance">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View>
-          <TableHeader cols={['Region', 'Leads', 'Apprvd', 'Disb', 'Rate']} />
-          {data.map((r, i) => (
-            <TableRow
-              key={r.id}
-              highlight={i % 2 === 0}
-              cells={[r.name, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`]}
-            />
-          ))}
-        </View>
-      </ScrollView>
-    </SectionCard>
+    <>
+      <SectionCard title="Region-wise Performance">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View>
+            <TableHeader cols={['Region', 'Leads', 'Apprvd', 'Disb', 'Rate']} />
+            {data.map((r, i) => (
+              <TableRow
+                key={r.id}
+                highlight={i % 2 === 0}
+                cells={[r.name, r.totalLeads, r.approved, r.disbursed, `${r.approvalRate}%`]}
+              />
+            ))}
+          </View>
+        </ScrollView>
+      </SectionCard>
+      <ExportButton exportType="clinics" label="Clinics" />
+    </>
   );
 }
 
@@ -272,20 +280,33 @@ function LenderTab() {
   if (qr.isError) return <ErrorBox onRetry={() => (qr.refetch as () => void)()} />;
   if (data.length === 0) return <EmptyBox icon="account-balance" message="No lender data" />;
   return (
-    <SectionCard title="Lender-wise Performance">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View>
-          <TableHeader cols={['Lender', 'Code', 'Leads', 'Apprvd', 'Rate']} />
-          {data.map((r, i) => (
-            <TableRow
-              key={r.id}
-              highlight={i % 2 === 0}
-              cells={[r.name, r.code, r.totalLeads, r.approved, `${r.approvalRate}%`]}
-            />
-          ))}
-        </View>
-      </ScrollView>
-    </SectionCard>
+    <>
+      <SectionCard title="Lender-wise Performance">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View>
+            <TableHeader cols={['Lender', 'Code', 'Leads', 'Apprvd', 'Rate']} />
+            {data.map((r, i) => (
+              <TableRow
+                key={r.id}
+                highlight={i % 2 === 0}
+                cells={[r.name, r.code, r.totalLeads, r.approved, `${r.approvalRate}%`]}
+              />
+            ))}
+          </View>
+        </ScrollView>
+      </SectionCard>
+      <ExportButton exportType="lender" label="Lender" />
+    </>
+  );
+}
+
+function ExportButton({ exportType, label }: { exportType: ExportType; label: string }) {
+  const handleExport = () => downloadAndShareExport(exportType);
+  return (
+    <TouchableOpacity style={styles.exportBtn} onPress={handleExport} activeOpacity={0.75}>
+      <MaterialIcons name="download" size={15} color={BRAND.primary} />
+      <RNText style={styles.exportBtnText}>Export {label} (.xlsx)</RNText>
+    </TouchableOpacity>
   );
 }
 
@@ -434,4 +455,17 @@ const styles = StyleSheet.create({
   emptyHint: { fontSize: 12, color: '#5A7A63', textAlign: 'center' },
   retryBtn: { marginTop: 8, backgroundColor: BRAND.primary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 8 },
   retryText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: BRAND.primary,
+    backgroundColor: '#FFFFFF',
+  },
+  exportBtnText: { fontSize: 12, fontWeight: '700', color: BRAND.primary },
 });

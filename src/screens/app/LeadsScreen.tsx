@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Text as RNText,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -18,8 +19,10 @@ import { fetchLeads } from '../../services/leadService';
 import { Lead } from '../../types/auth';
 import { BRAND } from '../../theme/theme';
 import { formatDate, formatCurrency, statusColor, formatStatus } from '../../utils/format';
+import { downloadAndShareExport } from '../../utils/nativeExport';
+import { ListSkeleton } from '../../components/SkeletonLoader';
 
-const STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'DISBURSED', 'REJECTED'] as const;
+const STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'DISBURSED', 'REJECTED', 'CANCELLED'] as const;
 type StatusFilter = typeof STATUS_FILTERS[number];
 
 function LeadCard({ item, onPress }: { item: Lead; onPress: () => void }) {
@@ -58,38 +61,40 @@ export function LeadsScreen() {
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('ALL');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const queryResult = useQuery({ queryKey: ['leads'], queryFn: fetchLeads }) as any;
+  const serverStatus = activeFilter !== 'ALL' ? activeFilter : undefined;
+  const queryResult = useQuery({
+    queryKey: ['leads', serverStatus, dateFrom, dateTo],
+    queryFn: () => fetchLeads({ status: serverStatus, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined }),
+  }) as any;
   const leads: Lead[] = queryResult.data ?? [];
   const isLoading: boolean = queryResult.isLoading;
   const isError: boolean = queryResult.isError;
   const refetch = () => (queryResult.refetch as () => Promise<any>)().finally(() => setRefreshing(false));
 
   const filtered = useMemo(() => {
-    let result = leads;
-    if (activeFilter !== 'ALL') {
-      result = result.filter((l) => l.status?.toUpperCase() === activeFilter);
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter(
-        (l) =>
-          l.applicantName.toLowerCase().includes(q) ||
-          l.clinicName.toLowerCase().includes(q) ||
-          l.assignedTo.toLowerCase().includes(q),
-      );
-    }
-    return result;
-  }, [leads, activeFilter, search]);
+    if (!search.trim()) return leads;
+    const q = search.trim().toLowerCase();
+    return leads.filter(
+      (l) =>
+        l.applicantName.toLowerCase().includes(q) ||
+        l.clinicName.toLowerCase().includes(q) ||
+        l.assignedTo.toLowerCase().includes(q),
+    );
+  }, [leads, search]);
+
+  function handleExport() {
+    downloadAndShareExport('leads');
+  }
+
+  const hasDateFilter = !!(dateFrom || dateTo);
 
   if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={BRAND.primary} size="large" />
-        <RNText style={styles.loadingText}>Loading leads...</RNText>
-      </View>
-    );
+    return <ListSkeleton rows={6} />;
   }
 
   if (isError) {
@@ -106,20 +111,66 @@ export function LeadsScreen() {
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      {/* Search */}
-      <View style={styles.searchWrap}>
-        <MaterialIcons name="search" size={20} color="#5A7A63" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search leads..."
-          placeholderTextColor="#A0BBA8"
-          value={search}
-          onChangeText={setSearch}
-          clearButtonMode="while-editing"
-        />
+      {/* Search + action row */}
+      <View style={styles.topRow}>
+        <View style={[styles.searchWrap, { flex: 1 }]}>
+          <MaterialIcons name="search" size={20} color="#5A7A63" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search leads..."
+            placeholderTextColor="#A0BBA8"
+            value={search}
+            onChangeText={setSearch}
+            clearButtonMode="while-editing"
+          />
+        </View>
+        <TouchableOpacity
+          style={[styles.iconActionBtn, hasDateFilter && styles.iconActionBtnActive]}
+          onPress={() => setShowDateFilter(v => !v)}
+        >
+          <MaterialIcons name="date-range" size={20} color={hasDateFilter ? '#FFF' : BRAND.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconActionBtn} onPress={handleExport}>
+          <MaterialIcons name="file-download" size={20} color={BRAND.primary} />
+        </TouchableOpacity>
       </View>
 
-      {/* Filter chips */}
+      {/* Date filter panel */}
+      {showDateFilter && (
+        <View style={styles.dateFilterPanel}>
+          <View style={styles.dateFilterRow}>
+            <View style={styles.dateField}>
+              <RNText style={styles.dateLabel}>From (YYYY-MM-DD)</RNText>
+              <TextInput
+                style={styles.dateInput}
+                placeholder="2025-01-01"
+                placeholderTextColor="#A0BBA8"
+                value={dateFrom}
+                onChangeText={setDateFrom}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
+            <View style={styles.dateField}>
+              <RNText style={styles.dateLabel}>To (YYYY-MM-DD)</RNText>
+              <TextInput
+                style={styles.dateInput}
+                placeholder="2025-12-31"
+                placeholderTextColor="#A0BBA8"
+                value={dateTo}
+                onChangeText={setDateTo}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
+          </View>
+          {hasDateFilter && (
+            <TouchableOpacity onPress={() => { setDateFrom(''); setDateTo(''); }}>
+              <RNText style={styles.clearDates}>Clear dates</RNText>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* Status filter chips */}
       <FlatList
         horizontal
         data={STATUS_FILTERS as unknown as StatusFilter[]}
@@ -200,20 +251,61 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryBtnText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 4,
+    gap: 8,
+  },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 4,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: '#DCF0E4',
   },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, height: 44, fontSize: 14, color: '#1A2D1E' },
+  iconActionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DCF0E4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconActionBtnActive: {
+    backgroundColor: BRAND.primary,
+    borderColor: BRAND.primary,
+  },
+  dateFilterPanel: {
+    marginHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#DCF0E4',
+    marginBottom: 4,
+  },
+  dateFilterRow: { flexDirection: 'row', gap: 12 },
+  dateField: { flex: 1 },
+  dateLabel: { fontSize: 11, fontWeight: '600', color: '#5A7A63', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.3 },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#C8DFD0',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: '#1A2D1E',
+  },
+  clearDates: { color: BRAND.primary, fontSize: 12, fontWeight: '600', textAlign: 'right', marginTop: 8 },
   filterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   filterChip: {
     paddingHorizontal: 14,

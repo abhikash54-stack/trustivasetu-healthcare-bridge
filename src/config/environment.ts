@@ -48,5 +48,5 @@ export const APP_INFO = {
   website: ENV.websiteUrl,
   copyright: `© ${new Date().getFullYear()} Aarthsetu Technologies Private Limited. All rights reserved.`,
   playStoreUrl: 'https://play.google.com/store/apps/details?id=com.aarthsetu.trustivasetu',
-  appStoreUrl: 'https://apps.apple.com/app/trustivasetu/id000000000',
+  appStoreUrl: '', // App Store submission pending — populate after iOS review approval
 } as const;

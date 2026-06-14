@@ -11,13 +11,13 @@ function normalizeLender(raw: any): Lender {
 }
 
 export async function fetchLenders(): Promise<Lender[]> {
-  const response = await (apiClient as any).get('/lenders');
+  const response = await apiClient.get('/lenders');
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map(normalizeLender);
 }
 
 export async function createLender(input: { name: string; code: string }): Promise<Lender> {
-  const response = await (apiClient as any).post('/lenders', input);
+  const response = await apiClient.post('/lenders', input);
   const raw = response.data?.data ?? response.data;
   return normalizeLender(raw);
 }

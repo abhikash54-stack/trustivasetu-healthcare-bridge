@@ -19,6 +19,7 @@ import { invalidateQueries } from '../../api/queryClient';
 import { BRAND } from '../../theme/theme';
 import { Region } from '../../types/auth';
 import { fetchRegions, createRegion } from '../../services/regionsService';
+import { usePermissionGuard } from '../../hooks/usePermissionGuard';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { formatDate } from '../../utils/format';
@@ -27,6 +28,7 @@ import { useAuth } from '../../hooks/useAuth';
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
 
 export function RegionsScreen() {
+  usePermissionGuard(['SUPER_ADMIN', 'ADMIN']);
   const { user } = useAuth();
   const canCreate = ADMIN_ROLES.includes(user?.role?.toUpperCase() ?? '');
 

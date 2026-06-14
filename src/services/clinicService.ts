@@ -40,13 +40,13 @@ function normalizeClinicDetail(raw: any): ClinicDetail {
 }
 
 export async function fetchClinics(): Promise<Clinic[]> {
-  const response = await (apiClient as any).get('/clinics');
+  const response = await apiClient.get('/clinics');
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map(normalizeClinic);
 }
 
 export async function fetchClinicById(clinicId: string): Promise<ClinicDetail> {
-  const response = await (apiClient as any).get(`/clinics/${clinicId}`);
+  const response = await apiClient.get(`/clinics/${clinicId}`);
   const raw = response.data?.data ?? response.data;
   return normalizeClinicDetail(raw);
 }
@@ -76,7 +76,15 @@ export async function createClinic(input: CreateClinicInput): Promise<Clinic> {
   if (input.accountNumber.trim()) payload.accountNumber = input.accountNumber.trim();
   if (input.assignedRMId.trim()) payload.assignedRMId = input.assignedRMId.trim();
 
-  const response = await (apiClient as any).post('/clinics', payload);
+  const response = await apiClient.post('/clinics', payload);
   const raw = response.data?.data ?? response.data;
   return normalizeClinic(raw);
+}
+
+export async function deleteClinic(clinicId: string): Promise<void> {
+  await apiClient.delete(`/clinics/${clinicId}`);
+}
+
+export async function updateClinic(clinicId: string, patch: Partial<CreateClinicInput & { assignedRMId: string }>): Promise<void> {
+  await apiClient.patch(`/clinics/${clinicId}`, patch);
 }

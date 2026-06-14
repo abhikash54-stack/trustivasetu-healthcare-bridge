@@ -11,6 +11,7 @@ export type DrawerParamList = {
   ClinicOnboarding: undefined;
   Enquiries: undefined;
   Reports: undefined;
+  Chatbot: undefined;
   Notifications: undefined;
   Profile: undefined;
   Settings: undefined;
@@ -20,10 +21,7 @@ export type DrawerParamList = {
   Lenders: undefined;
   Targets: undefined;
   AuditLogs: undefined;
-  Attendance: undefined;
-  Leave: undefined;
-  Tasks: undefined;
-  HRPolicies: undefined;
+  Occasions: undefined;
   EmployeeDirectory: undefined;
 };
 

@@ -18,7 +18,7 @@ function normalizeTarget(raw: any): Target {
 }
 
 export async function fetchTargets(year: number, month: number): Promise<Target[]> {
-  const response = await (apiClient as any).get('/targets', { params: { year, month } });
+  const response = await apiClient.get('/targets', { params: { year, month } });
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map(normalizeTarget);
 }
@@ -36,7 +36,7 @@ export interface UpsertTargetInput {
 export async function upsertTarget(input: UpsertTargetInput): Promise<Target> {
   const payload: any = { ...input };
   Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
-  const response = await (apiClient as any).post('/targets', payload);
+  const response = await apiClient.post('/targets', payload);
   const raw = response.data?.data ?? response.data;
   return normalizeTarget(raw);
 }

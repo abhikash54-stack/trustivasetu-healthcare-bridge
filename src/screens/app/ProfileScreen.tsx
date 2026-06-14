@@ -14,9 +14,8 @@ import { logout } from '../../services/authService';
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Administrator',
   ADMIN: 'Administrator',
-  MANAGER: 'Manager',
-  RM: 'Regional Manager',
-  EMPLOYEE: 'Employee',
+  REGIONAL_MANAGER: 'Regional Manager',
+  TEAM_MEMBER: 'Team Member',
 };
 
 function InfoRow({ icon, label, value }: { icon: string; label: string; value: string }) {
@@ -82,6 +81,20 @@ export function ProfileScreen() {
         <InfoRow icon="phone" label="Phone" value={user?.phone ?? '—'} />
         <InfoRow icon="badge" label="Employee ID" value={empId} />
         <InfoRow icon="work" label="Designation" value={roleLabel} />
+      </View>
+
+      <View style={styles.infoCard}>
+        <RNText style={styles.sectionTitle}>Quick Access</RNText>
+        <ActionRow
+          icon="support-agent"
+          label="Partner Assistant"
+          onPress={() => navigation.navigate('Chatbot')}
+        />
+        <ActionRow
+          icon="celebration"
+          label="Special Occasions"
+          onPress={() => navigation.navigate('Occasions')}
+        />
       </View>
 
       <View style={styles.infoCard}>

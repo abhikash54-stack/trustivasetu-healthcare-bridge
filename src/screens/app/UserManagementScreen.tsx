@@ -21,7 +21,8 @@ import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Avatar } from '../../components/Avatar';
 import { BRAND } from '../../theme/theme';
-import { ManagedUser, UserStatus } from '../../types/auth';
+import { ManagedUser, Region, UserStatus } from '../../types/auth';
+import { usePermissionGuard } from '../../hooks/usePermissionGuard';
 import {
   listUsers,
   createUser,
@@ -30,6 +31,7 @@ import {
   adminResetPassword,
   deleteUser,
 } from '../../services/userManagementService';
+import { fetchRegions } from '../../services/regionsService';
 
 const ROLES = ['ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] as const;
 
@@ -61,9 +63,10 @@ interface AddForm {
   phone: string;
   password: string;
   role: string;
+  regionIds: string[];
 }
 
-const EMPTY_FORM: AddForm = { name: '', email: '', phone: '', password: '', role: 'TEAM_MEMBER' };
+const EMPTY_FORM: AddForm = { name: '', email: '', phone: '', password: '', role: 'TEAM_MEMBER', regionIds: [] };
 
 function isActive(user: ManagedUser): boolean {
   return user.status === 'ACTIVE';
@@ -71,6 +74,7 @@ function isActive(user: ManagedUser): boolean {
 
 export function UserManagementScreen() {
   const insets = useSafeAreaInsets();
+  usePermissionGuard(['SUPER_ADMIN', 'ADMIN']);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
@@ -80,6 +84,19 @@ export function UserManagementScreen() {
   const [resetPassword, setResetPassword] = useState('');
 
   const [refreshing, setRefreshing] = useState(false);
+  const regionsResult = useQuery({ queryKey: ['regions'], queryFn: fetchRegions }) as any;
+  const regions: Region[] = regionsResult.data ?? [];
+
+  const toggleRegion = (regionId: string) => {
+    setForm((p) => {
+      const already = p.regionIds.includes(regionId);
+      return {
+        ...p,
+        regionIds: already ? p.regionIds.filter((id) => id !== regionId) : [...p.regionIds, regionId],
+      };
+    });
+  };
+
   const queryResult = useQuery({ queryKey: ['users'], queryFn: listUsers }) as any;
   const users: ManagedUser[] = queryResult.data ?? [];
   const { isLoading } = queryResult;
@@ -149,9 +166,9 @@ export function UserManagementScreen() {
       return Alert.alert('Required', 'Enter a valid email address.');
     if (!form.email.trim().endsWith('@trustivasetu.com'))
       return Alert.alert('Invalid email', 'Email must end with @trustivasetu.com');
-    if (!form.password || form.password.length < 6)
-      return Alert.alert('Required', 'Password must be at least 6 characters.');
-    createMutation.mutate(form);
+    if (!form.password || form.password.length < 8)
+      return Alert.alert('Required', 'Password must be at least 8 characters.');
+    createMutation.mutate({ name: form.name, email: form.email, phone: form.phone, password: form.password, role: form.role, regionIds: form.regionIds });
   };
 
   const handleToggleStatus = (user: ManagedUser) => {
@@ -190,8 +207,8 @@ export function UserManagementScreen() {
   };
 
   const submitReset = () => {
-    if (!resetPassword || resetPassword.length < 6) {
-      return Alert.alert('Too short', 'Password must be at least 6 characters.');
+    if (!resetPassword || resetPassword.length < 8) {
+      return Alert.alert('Too short', 'Password must be at least 8 characters.');
     }
     if (!selectedUser) return;
     resetMutation.mutate({ userId: selectedUser.id, password: resetPassword });
@@ -325,7 +342,7 @@ export function UserManagementScreen() {
             />
             <FormInput
               label="Password *"
-              placeholder="Min. 6 characters"
+              placeholder="Min. 8 characters"
               secureTextEntry
               value={form.password}
               onChangeText={(v) => setForm((p) => ({ ...p, password: v }))}
@@ -350,6 +367,27 @@ export function UserManagementScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+            {regions.length > 0 && (
+              <>
+                <Text style={styles.rolePickerLabel}>Region Assignment (optional)</Text>
+                <View style={styles.roleGrid}>
+                  {regions.map((region) => {
+                    const selected = form.regionIds.includes(region.id);
+                    return (
+                      <TouchableOpacity
+                        key={region.id}
+                        style={[styles.roleChip, selected && { backgroundColor: '#0E6655', borderColor: '#0E6655' }]}
+                        onPress={() => toggleRegion(region.id)}
+                      >
+                        <Text style={[styles.roleChipText, selected && styles.roleChipTextActive]}>
+                          {region.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
             <View style={{ marginTop: 12 }}>
               <PrimaryButton
                 label={createMutation.isPending ? 'Creating...' : 'Create Account'}
@@ -420,7 +458,7 @@ export function UserManagementScreen() {
             </Text>
             <TextInput
               style={styles.resetInput}
-              placeholder="New password (min. 6 chars)"
+              placeholder="New password (min. 8 chars)"
               placeholderTextColor="#AAA"
               secureTextEntry
               value={resetPassword}

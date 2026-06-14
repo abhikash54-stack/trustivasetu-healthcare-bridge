@@ -14,6 +14,7 @@ import { BRAND } from '../../theme/theme';
 import { AuditLog } from '../../types/auth';
 import { fetchAuditLogs } from '../../services/auditLogService';
 import { formatDate } from '../../utils/format';
+import { usePermissionGuard } from '../../hooks/usePermissionGuard';
 
 const ENTITY_FILTERS = ['All', 'Lead', 'Clinic', 'User', 'Target'];
 
@@ -35,6 +36,7 @@ function actionColor(action: string): string {
 }
 
 export function AuditLogsScreen() {
+  usePermissionGuard(['SUPER_ADMIN', 'ADMIN']);
   const [entityFilter, setEntityFilter] = useState('All');
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);

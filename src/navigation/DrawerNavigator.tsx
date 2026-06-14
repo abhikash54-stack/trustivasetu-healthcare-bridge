@@ -10,6 +10,8 @@ import { LeadsScreen } from '../screens/app/LeadsScreen';
 import { ClinicsScreen } from '../screens/app/ClinicsScreen';
 import { EnquiryScreen } from '../screens/app/EnquiryScreen';
 import { ReportsScreen } from '../screens/app/ReportsScreen';
+import { ChatbotScreen } from '../screens/app/ChatbotScreen';
+import { OccasionsScreen } from '../screens/app/OccasionsScreen';
 import { ProfileScreen } from '../screens/app/ProfileScreen';
 import { NotificationsScreen } from '../screens/app/NotificationsScreen';
 import { SettingsScreen } from '../screens/app/SettingsScreen';
@@ -19,10 +21,6 @@ import { RegionsScreen } from '../screens/app/RegionsScreen';
 import { LendersScreen } from '../screens/app/LendersScreen';
 import { TargetsScreen } from '../screens/app/TargetsScreen';
 import { AuditLogsScreen } from '../screens/app/AuditLogsScreen';
-import { AttendanceScreen } from '../screens/app/AttendanceScreen';
-import { LeaveScreen } from '../screens/app/LeaveScreen';
-import { TasksScreen } from '../screens/app/TasksScreen';
-import { HRPoliciesScreen } from '../screens/app/HRPoliciesScreen';
 import { EmployeeDirectoryScreen } from '../screens/app/EmployeeDirectoryScreen';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
@@ -47,6 +45,8 @@ export function DrawerNavigator() {
       <Drawer.Screen name="ClinicOnboarding"  component={ClinicsScreen} />
       <Drawer.Screen name="Enquiries"         component={EnquiryScreen} />
       <Drawer.Screen name="Reports"           component={ReportsScreen} />
+      <Drawer.Screen name="Chatbot"           component={ChatbotScreen} />
+      <Drawer.Screen name="Occasions"         component={OccasionsScreen} />
       <Drawer.Screen name="Notifications"     component={NotificationsScreen} />
       <Drawer.Screen name="Profile"           component={ProfileScreen} />
       <Drawer.Screen name="Settings"          component={SettingsScreen} />
@@ -56,11 +56,6 @@ export function DrawerNavigator() {
       <Drawer.Screen name="Lenders"           component={LendersScreen} />
       <Drawer.Screen name="Targets"           component={TargetsScreen} />
       <Drawer.Screen name="AuditLogs"         component={AuditLogsScreen} />
-      {/* Legacy stub screens — not shown in drawer but kept for compatibility */}
-      <Drawer.Screen name="Attendance"        component={AttendanceScreen} />
-      <Drawer.Screen name="Leave"             component={LeaveScreen} />
-      <Drawer.Screen name="Tasks"             component={TasksScreen} />
-      <Drawer.Screen name="HRPolicies"        component={HRPoliciesScreen} />
       <Drawer.Screen name="EmployeeDirectory" component={EmployeeDirectoryScreen} />
     </Drawer.Navigator>
   );

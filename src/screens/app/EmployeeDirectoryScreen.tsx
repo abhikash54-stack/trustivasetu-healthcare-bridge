@@ -19,9 +19,8 @@ import { Employee } from '../../types/auth';
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   ADMIN: 'Admin',
-  MANAGER: 'Manager',
-  RM: 'Regional Manager',
-  EMPLOYEE: 'Employee',
+  REGIONAL_MANAGER: 'Regional Manager',
+  TEAM_MEMBER: 'Team Member',
 };
 
 function initials(name: string): string {

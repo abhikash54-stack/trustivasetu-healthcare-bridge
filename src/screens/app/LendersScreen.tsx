@@ -19,6 +19,7 @@ import { invalidateQueries } from '../../api/queryClient';
 import { BRAND } from '../../theme/theme';
 import { Lender } from '../../types/auth';
 import { fetchLenders, createLender } from '../../services/lendersService';
+import { usePermissionGuard } from '../../hooks/usePermissionGuard';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAuth } from '../../hooks/useAuth';
@@ -26,6 +27,7 @@ import { useAuth } from '../../hooks/useAuth';
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
 
 export function LendersScreen() {
+  usePermissionGuard(['SUPER_ADMIN', 'ADMIN']);
   const { user } = useAuth();
   const canCreate = ADMIN_ROLES.includes(user?.role?.toUpperCase() ?? '');
 

@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Provider, useDispatch } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from './api/queryClient';
+import { queryClient, restoreQueryCache } from './api/queryClient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { store } from './store';
@@ -15,13 +15,25 @@ import { tokenManager } from './api/tokenManager';
 import { signOut } from './store/slices/authSlice';
 import { clearUser } from './services/storageService';
 import { logout } from './services/authService';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { OfflineBanner } from './components/OfflineBanner';
+import { scheduleOccasionNotifications } from './services/notificationScheduler';
 
 function AppContent() {
   const dispatch = useDispatch();
   useCachedAuth();
   useOTAUpdates();
 
+  const user = useSelector((s: ReturnType<typeof store.getState>) => s.auth.user);
+
   useEffect(() => {
+    if (user) {
+      scheduleOccasionNotifications(user).catch(() => {});
+    }
+  }, [user]);
+
+  useEffect(() => {
+    restoreQueryCache().catch(() => {});
     tokenManager.setSessionExpiredCallback(async () => {
       await logout();
       await clearUser();
@@ -31,6 +43,7 @@ function AppContent() {
 
   return (
     <>
+      <OfflineBanner />
       <Navigation />
       <StatusBar style="auto" />
     </>
@@ -39,16 +52,18 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <ThemeProvider>
-              <AppContent />
-            </ThemeProvider>
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>
+              <ThemeProvider>
+                <AppContent />
+              </ThemeProvider>
+            </SafeAreaProvider>
+          </GestureHandlerRootView>
+        </QueryClientProvider>
+      </Provider>
+    </ErrorBoundary>
   );
 }

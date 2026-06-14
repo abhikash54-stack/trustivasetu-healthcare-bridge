@@ -20,6 +20,7 @@ import { BRAND } from '../../theme/theme';
 import { Target, Region } from '../../types/auth';
 import { fetchTargets, upsertTarget, UpsertTargetInput } from '../../services/targetsService';
 import { fetchRegions } from '../../services/regionsService';
+import { usePermissionGuard } from '../../hooks/usePermissionGuard';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { formatCurrency } from '../../utils/format';
@@ -31,6 +32,7 @@ const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
 const now = new Date();
 
 export function TargetsScreen() {
+  usePermissionGuard(['SUPER_ADMIN', 'ADMIN']);
   const { user } = useAuth();
   const canCreate = ADMIN_ROLES.includes(user?.role?.toUpperCase() ?? '');
 

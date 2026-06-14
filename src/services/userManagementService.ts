@@ -14,7 +14,7 @@ function normalizeUser(raw: any): ManagedUser {
 }
 
 export async function listUsers(): Promise<ManagedUser[]> {
-  const response = await (apiClient as any).get('/users');
+  const response = await apiClient.get('/users');
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map(normalizeUser);
 }
@@ -25,23 +25,35 @@ export async function createUser(payload: {
   phone: string;
   role: string;
   password: string;
+  regionIds?: string[];
 }): Promise<ManagedUser> {
-  const response = await (apiClient as any).post('/users', payload);
+  const body: Record<string, unknown> = {
+    name: payload.name,
+    email: payload.email,
+    phone: payload.phone,
+    role: payload.role,
+    password: payload.password,
+  };
+  if (payload.regionIds && payload.regionIds.length > 0) {
+    body.regionIds = payload.regionIds;
+  }
+  const response = await apiClient.post('/users', body);
   return normalizeUser(response.data?.data ?? response.data);
 }
 
 export async function updateUserRole(userId: string, role: string): Promise<void> {
-  await (apiClient as any).put(`/users/${userId}/role`, { role });
+  await apiClient.patch(`/users/${userId}`, { role });
 }
 
 export async function updateUserStatus(userId: string, status: UserStatus): Promise<void> {
-  await (apiClient as any).put(`/users/${userId}/status`, { status });
+  const isActive = status === 'ACTIVE';
+  await apiClient.patch(`/users/${userId}`, { isActive });
 }
 
 export async function adminResetPassword(userId: string, newPassword: string): Promise<void> {
-  await (apiClient as any).put(`/users/${userId}/reset-password`, { newPassword });
+  await apiClient.patch(`/users/${userId}`, { password: newPassword });
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  await (apiClient as any).delete(`/users/${userId}`);
+  await apiClient.delete(`/users/${userId}`);
 }

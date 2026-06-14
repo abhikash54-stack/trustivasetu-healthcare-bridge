@@ -13,7 +13,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { invalidateQueries } from '../../api/queryClient';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { fetchLeadById, updateLeadStatus } from '../../services/leadService';
+import { fetchLeadById, updateLeadStatus, deleteLead } from '../../services/leadService';
 import { useNavigation } from '@react-navigation/native';
 import { LeadDetail } from '../../types/auth';
 import { Text, Box } from '../../theme/theme';
@@ -29,6 +29,7 @@ interface LeadDetailsScreenProps {
 const STATUS_OPTIONS = ['PENDING', 'APPROVED', 'DISBURSED', 'REJECTED', 'CANCELLED'];
 
 const STATUS_UPDATE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER'];
+const DELETE_ROLES = ['SUPER_ADMIN', 'ADMIN'];
 
 export function LeadDetailsScreen({ route }: LeadDetailsScreenProps) {
   const { leadId } = route.params;
@@ -62,6 +63,31 @@ export function LeadDetailsScreen({ route }: LeadDetailsScreenProps) {
   });
 
   const canUpdateStatus = STATUS_UPDATE_ROLES.includes(user?.role?.toUpperCase() ?? '');
+  const canDelete = DELETE_ROLES.includes(user?.role?.toUpperCase() ?? '');
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteLead(leadId),
+    onSuccess: () => {
+      invalidateQueries(['leads']);
+      navigation.goBack();
+    },
+    onError: () => Alert.alert('Error', 'Could not delete this lead. Please try again.'),
+  });
+
+  function confirmDelete() {
+    Alert.alert(
+      'Delete Lead',
+      `Are you sure you want to permanently delete the lead for "${lead?.applicantName}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteMutation.mutate(),
+        },
+      ],
+    );
+  }
 
   if (isLoading) {
     return (
@@ -103,7 +129,7 @@ export function LeadDetailsScreen({ route }: LeadDetailsScreenProps) {
               </View>
             ) : null}
           </View>
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
             {canUpdateStatus && (
               <TouchableOpacity
                 style={styles.updateStatusBtn}
@@ -120,6 +146,18 @@ export function LeadDetailsScreen({ route }: LeadDetailsScreenProps) {
               >
                 <MaterialIcons name="edit" size={15} color="#8E44AD" />
                 <RNText style={[styles.updateStatusText, { color: '#8E44AD' }]}>Edit Lead</RNText>
+              </TouchableOpacity>
+            )}
+            {canDelete && (
+              <TouchableOpacity
+                style={[styles.updateStatusBtn, { borderColor: '#E74C3C' }]}
+                onPress={confirmDelete}
+                disabled={(deleteMutation as any).isPending}
+              >
+                <MaterialIcons name="delete-outline" size={15} color="#E74C3C" />
+                <RNText style={[styles.updateStatusText, { color: '#E74C3C' }]}>
+                  {(deleteMutation as any).isPending ? 'Deleting...' : 'Delete'}
+                </RNText>
               </TouchableOpacity>
             )}
           </View>

@@ -6,13 +6,13 @@ import { Avatar } from './Avatar';
 import { RootState } from '../store';
 import { BRAND } from '../theme/theme';
 import { APP_INFO } from '../config/environment';
+import { detectTodaysOccasions } from '../services/occasionsService';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   ADMIN: 'Administrator',
-  MANAGER: 'Manager',
-  RM: 'Regional Manager',
-  EMPLOYEE: 'Employee',
+  REGIONAL_MANAGER: 'Regional Manager',
+  TEAM_MEMBER: 'Team Member',
 };
 
 interface AppHeaderProps {
@@ -24,11 +24,18 @@ export function AppHeader({ navigation }: AppHeaderProps) {
   const user = useSelector((state: RootState) => state.auth.user);
 
   const roleLabel = ROLE_LABELS[user?.role?.toUpperCase() ?? ''] ?? 'Staff Member';
+  const todayOccasions = user ? detectTodaysOccasions(user as any) : [];
+  const hasOccasion = todayOccasions.length > 0;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       <View style={styles.left}>
-        <Avatar name={user?.name ?? '?'} size={40} bgColor="rgba(255,255,255,0.22)" />
+        <View>
+          <Avatar name={user?.name ?? '?'} size={40} bgColor="rgba(255,255,255,0.22)" />
+          {hasOccasion && (
+            <Text style={styles.occasionDot}>{todayOccasions[0].emoji}</Text>
+          )}
+        </View>
         <View style={styles.userInfo}>
           <Text style={styles.appBrand} numberOfLines={1}>{APP_INFO.name}</Text>
           <Text style={styles.name} numberOfLines={1}>{user?.name ?? 'User'} · {roleLabel}</Text>
@@ -89,11 +96,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 1,
   },
-  role: {
-    color: 'rgba(255, 255, 255, 0.72)',
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 1,
+  occasionDot: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    fontSize: 14,
   },
   right: {
     flexDirection: 'row',

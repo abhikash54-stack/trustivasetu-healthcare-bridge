@@ -2,6 +2,23 @@ export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BLOCKED' | 'TERM
 
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'REGIONAL_MANAGER' | 'TEAM_MEMBER';
 
+export type OccasionType = 'BIRTHDAY' | 'WORK_ANNIVERSARY' | 'MARRIAGE_ANNIVERSARY' | 'JOINING_DATE' | 'CUSTOM';
+
+export interface CustomOccasion {
+  id: string;
+  name: string;
+  date: string; // "MM-DD"
+}
+
+export interface OccasionMatch {
+  type: OccasionType;
+  label: string;
+  emoji: string;
+  message: string;
+  yearsCount?: number;
+  customName?: string;
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -21,6 +38,11 @@ export interface UserProfile {
   phone: string;
   role: string;
   status: UserStatus;
+  // Special occasion fields (stored as "MM-DD" for recurrence)
+  birthday?: string;          // "MM-DD"
+  marriageAnniversary?: string; // "MM-DD"
+  joiningDate?: string;       // ISO date string (to calculate work anniversary year)
+  customOccasions?: CustomOccasion[];
 }
 
 export interface AuthResponse {
@@ -226,7 +248,7 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'LEAD' | 'TASK' | 'LEAVE' | 'APPROVAL' | 'SYSTEM';
+  type: 'LEAD' | 'TASK' | 'LEAVE' | 'APPROVAL' | 'SYSTEM' | 'CELEBRATION' | 'OCCASION';
   isRead: boolean;
   createdAt: string;
   referenceId?: string;
@@ -329,16 +351,30 @@ export interface TrendSeries {
   value: number;
 }
 
+export interface RecentLead {
+  id: string;
+  applicantName: string;
+  status: string;
+  amount: number;
+  clinicName: string;
+  createdAt: string;
+}
+
 export interface DashboardMetrics {
   totalLeads: number;
   approvedLeads: number;
   disbursedLeads: number;
   pendingLeads: number;
+  rejectedLeads: number;
   approvedValue: string;
   disbursedValue: string;
+  totalLeadValue: string;
+  approvalRate: number;
+  disbursalRate: number;
   activeClinics: number;
   topClinic: string;
   leadStatusCounts: DashboardMetricCounts;
   runRate: RunRate;
   trend: TrendSeries[];
+  recentLeads: RecentLead[];
 }

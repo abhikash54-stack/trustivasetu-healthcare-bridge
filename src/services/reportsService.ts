@@ -2,7 +2,7 @@ import { apiClient } from '../api/axios';
 import { MonthlyReport, RegionReport, RMReport, LenderReport } from '../types/auth';
 
 export async function fetchMonthlyReport(months: number = 6): Promise<MonthlyReport[]> {
-  const response = await (apiClient as any).get('/reports', { params: { type: 'monthly', months } });
+  const response = await apiClient.get('/reports', { params: { type: 'monthly', months } });
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map((r: any): MonthlyReport => ({
     period: r.period ?? '',
@@ -19,7 +19,7 @@ export async function fetchMonthlyReport(months: number = 6): Promise<MonthlyRep
 }
 
 export async function fetchRegionReport(): Promise<RegionReport[]> {
-  const response = await (apiClient as any).get('/reports', { params: { type: 'region' } });
+  const response = await apiClient.get('/reports', { params: { type: 'region' } });
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map((r: any): RegionReport => ({
     id: r.id ?? '',
@@ -34,7 +34,7 @@ export async function fetchRegionReport(): Promise<RegionReport[]> {
 }
 
 export async function fetchRMReport(): Promise<RMReport[]> {
-  const response = await (apiClient as any).get('/reports', { params: { type: 'rm' } });
+  const response = await apiClient.get('/reports', { params: { type: 'rm' } });
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map((r: any): RMReport => ({
     id: r.id ?? '',
@@ -50,7 +50,7 @@ export async function fetchRMReport(): Promise<RMReport[]> {
 }
 
 export async function fetchLenderReport(): Promise<LenderReport[]> {
-  const response = await (apiClient as any).get('/reports', { params: { type: 'lender' } });
+  const response = await apiClient.get('/reports', { params: { type: 'lender' } });
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map((r: any): LenderReport => ({
     id: r.id ?? '',

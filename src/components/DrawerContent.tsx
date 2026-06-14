@@ -18,20 +18,22 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { key: 'Dashboard',        label: 'Dashboard',          icon: 'dashboard',           roles: null },
-  { key: 'Leads',            label: 'Leads',              icon: 'people',              roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
-  { key: 'ClinicOnboarding', label: 'Channel Partners',   icon: 'business',            roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
-  { key: 'Enquiries',        label: 'Enquiries',          icon: 'assignment',          roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
-  { key: 'Reports',          label: 'Reports',            icon: 'bar-chart',           roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
-  { key: 'Notifications',    label: 'Notifications',      icon: 'notifications-none',  roles: null },
-  { key: 'Profile',          label: 'Profile',            icon: 'person-outline',      roles: null },
-  { key: 'UserManagement',   label: 'User Management',    icon: 'supervisor-account',  roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { key: 'Regions',          label: 'Regions',            icon: 'map',                 roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { key: 'Lenders',          label: 'Lenders',            icon: 'account-balance',     roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { key: 'Targets',          label: 'Targets',            icon: 'track-changes',       roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { key: 'AuditLogs',        label: 'Audit Logs',         icon: 'history',             roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { key: 'Settings',         label: 'Settings',           icon: 'settings',            roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { key: 'About',            label: 'About TrustivaSetu', icon: 'info-outline',        roles: null },
+  { key: 'Dashboard',        label: 'Dashboard',              icon: 'dashboard',           roles: null },
+  { key: 'Chatbot',          label: 'Partner Assistant',      icon: 'support-agent',       roles: null },
+  { key: 'Leads',            label: 'Leads',                  icon: 'people',              roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
+  { key: 'ClinicOnboarding', label: 'Channel Partners',       icon: 'business',            roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
+  { key: 'Enquiries',        label: 'Enquiries',              icon: 'assignment',          roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
+  { key: 'Reports',          label: 'Reports',                icon: 'bar-chart',           roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
+  { key: 'Notifications',    label: 'Notifications',          icon: 'notifications-none',  roles: null },
+  { key: 'Profile',          label: 'Profile',                icon: 'person-outline',      roles: null },
+  { key: 'Occasions',        label: 'Special Occasions',      icon: 'celebration',         roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'UserManagement',   label: 'User Management',        icon: 'supervisor-account',  roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'Regions',          label: 'Regions',                icon: 'map',                 roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'Lenders',          label: 'Lenders',                icon: 'account-balance',     roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'Targets',          label: 'Targets',                icon: 'track-changes',       roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'AuditLogs',        label: 'Audit Logs',             icon: 'history',             roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'Settings',         label: 'Settings',               icon: 'settings',            roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'About',            label: 'About TrustivaSetu',     icon: 'info-outline',        roles: null },
 ];
 
 const ROLE_LABELS: Record<string, string> = {

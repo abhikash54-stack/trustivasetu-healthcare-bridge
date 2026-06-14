@@ -40,14 +40,35 @@ function normalizeLeadDetail(raw: any): LeadDetail {
   };
 }
 
-export async function fetchLeads(): Promise<Lead[]> {
-  const response = await (apiClient as any).get('/leads');
+export interface LeadFilterParams {
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  clinicId?: string;
+  regionId?: string;
+  search?: string;
+}
+
+export async function fetchLeads(params?: LeadFilterParams): Promise<Lead[]> {
+  const query = new URLSearchParams();
+  if (params?.status) query.set('status', params.status);
+  if (params?.dateFrom) query.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) query.set('dateTo', params.dateTo);
+  if (params?.clinicId) query.set('clinicId', params.clinicId);
+  if (params?.regionId) query.set('regionId', params.regionId);
+  if (params?.search) query.set('search', params.search);
+  const qs = query.toString();
+  const response = await apiClient.get(qs ? `/leads?${qs}` : '/leads');
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map(normalizeLead);
 }
 
+export async function deleteLead(leadId: string): Promise<void> {
+  await apiClient.delete(`/leads/${leadId}`);
+}
+
 export async function fetchLeadById(leadId: string): Promise<LeadDetail> {
-  const response = await (apiClient as any).get(`/leads/${leadId}`);
+  const response = await apiClient.get(`/leads/${leadId}`);
   const raw = response.data?.data ?? response.data;
   return normalizeLeadDetail(raw);
 }
@@ -75,7 +96,7 @@ export async function createLead(input: CreateLeadInput): Promise<Lead> {
   if (input.applicationDate.trim()) payload.applicationDate = input.applicationDate.trim();
   if (input.remarks.trim()) payload.remarks = input.remarks.trim();
 
-  const response = await (apiClient as any).post('/leads', payload);
+  const response = await apiClient.post('/leads', payload);
   const raw = response.data?.data ?? response.data;
   return normalizeLead(raw);
 }
@@ -108,11 +129,11 @@ export async function updateLead(leadId: string, input: UpdateLeadInput): Promis
   if (input.applicationDate !== undefined) payload.applicationDate = input.applicationDate;
   if (input.remarks !== undefined) payload.remarks = input.remarks;
 
-  const response = await (apiClient as any).patch(`/leads/${leadId}`, payload);
+  const response = await apiClient.patch(`/leads/${leadId}`, payload);
   const raw = response.data?.data ?? response.data;
   return normalizeLeadDetail(raw);
 }
 
 export async function updateLeadStatus(leadId: string, status: string): Promise<void> {
-  await (apiClient as any).patch(`/leads/${leadId}`, { status });
+  await apiClient.patch(`/leads/${leadId}`, { status });
 }

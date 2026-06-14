@@ -26,13 +26,13 @@ function normalizeEnquiryDetail(raw: any): EnquiryDetail {
 }
 
 export async function fetchEnquiries(): Promise<Enquiry[]> {
-  const response = await (apiClient as any).get('/enquiries/provider');
+  const response = await apiClient.get('/enquiries/provider');
   const raw: any[] = response.data?.data ?? (Array.isArray(response.data) ? response.data : []);
   return raw.map(normalizeEnquiry);
 }
 
 export async function fetchEnquiryById(enquiryId: string): Promise<EnquiryDetail> {
-  const response = await (apiClient as any).get(`/enquiries/provider/${enquiryId}`);
+  const response = await apiClient.get(`/enquiries/provider/${enquiryId}`);
   const raw = response.data?.data ?? response.data;
   return normalizeEnquiryDetail(raw);
 }
