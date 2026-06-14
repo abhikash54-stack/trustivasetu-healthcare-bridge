@@ -62,6 +62,17 @@
       "ios": {
         "buildConfiguration": "Release"
       }
+    },
+    "production-apk": {
+      "distribution": "internal",
+      "channel": "production",
+      "credentialsSource": "remote",
+      "env": {
+        "APP_ENV": "production"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
