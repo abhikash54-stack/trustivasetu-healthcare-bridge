@@ -70,6 +70,9 @@ export function LeadsScreen() {
   const queryResult = useQuery({
     queryKey: ['leads', serverStatus, dateFrom, dateTo],
     queryFn: () => fetchLeads({ status: serverStatus, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined }),
+    // Real-time sync with the LMS: pull status/approval/disbursal changes every 30s.
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   }) as any;
   const leads: Lead[] = queryResult.data ?? [];
   const isLoading: boolean = queryResult.isLoading;

@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#006B3C"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aarthsetu.trustivasetu",
@@ -49,17 +44,21 @@
         "projectId": "98b5cebf-5f97-4367-8422-573cbb574c87"
       }
     },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    },
+    
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-secure-store",
+      
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#006B3C"
+        }
+      ]
     ],
-    "owner": "aarthsetu1",
-    "updates": {
-      "url": "https://u.expo.dev/98b5cebf-5f97-4367-8422-573cbb574c87",
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
-    }
+    "owner": "aarthsetu1"
+    
   }
 }

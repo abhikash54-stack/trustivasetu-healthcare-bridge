@@ -6,6 +6,7 @@ import {
   View,
   Text as RNText,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -67,6 +68,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const user = useSelector((s: RootState) => s.auth.user);
 
   const handleClearCache = () => {
@@ -145,6 +147,33 @@ export function SettingsScreen() {
           label="Local Storage"
           subtitle="Only user profile cached locally — no tokens stored"
           value="Secure"
+        />
+        <SettingRow
+          icon="delete-outline"
+          label="Delete Account"
+          subtitle="Request account deletion"
+          onPress={() => navigation.navigate('DeleteAccount')}
+        />
+      </Section>
+
+      <Section title="Support">
+        <SettingRow
+          icon="privacy-tip"
+          label="Privacy Policy"
+          subtitle="Review our privacy commitments"
+          onPress={() => navigation.navigate('PrivacyPolicy')}
+        />
+        <SettingRow
+          icon="gavel"
+          label="Terms & Conditions"
+          subtitle="Read applicable service terms"
+          onPress={() => navigation.navigate('TermsAndConditions')}
+        />
+        <SettingRow
+          icon="support-agent"
+          label="Support & Grievance"
+          subtitle="Contact support or raise a grievance"
+          onPress={() => navigation.navigate('Support')}
         />
       </Section>
 

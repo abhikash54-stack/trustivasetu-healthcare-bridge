@@ -9,6 +9,11 @@ import { ChangePasswordScreen } from '../../screens/auth/ChangePasswordScreen';
 import { CreateLeadScreen } from '../../screens/app/CreateLeadScreen';
 import { CreateClinicScreen } from '../../screens/app/CreateClinicScreen';
 import { EditLeadScreen } from '../../screens/app/EditLeadScreen';
+import { ChannelPartnerOnboardingScreen } from '../../screens/app/ChannelPartnerOnboardingScreen';
+import { PrivacyPolicyScreen } from '../../screens/app/PrivacyPolicyScreen';
+import { TermsAndConditionsScreen } from '../../screens/app/TermsAndConditionsScreen';
+import { SupportScreen } from '../../screens/app/SupportScreen';
+import { DeleteAccountScreen } from '../../screens/app/DeleteAccountScreen';
 import { AppStackParamList } from '../../types/navigation';
 import { BRAND } from '../../theme/theme';
 
@@ -65,6 +70,31 @@ export function AppNavigator() {
         name="EditLead"
         component={EditLeadScreen}
         options={{ ...detailHeaderOptions, title: 'Edit Lead' }}
+      />
+      <Stack.Screen
+        name="ChannelPartnerOnboarding"
+        component={ChannelPartnerOnboardingScreen}
+        options={{ ...detailHeaderOptions, title: 'Partner Onboarding' }}
+      />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{ ...detailHeaderOptions, title: 'Privacy Policy' }}
+      />
+      <Stack.Screen
+        name="TermsAndConditions"
+        component={TermsAndConditionsScreen}
+        options={{ ...detailHeaderOptions, title: 'Terms & Conditions' }}
+      />
+      <Stack.Screen
+        name="Support"
+        component={SupportScreen}
+        options={{ ...detailHeaderOptions, title: 'Support & Grievance' }}
+      />
+      <Stack.Screen
+        name="DeleteAccount"
+        component={DeleteAccountScreen}
+        options={{ ...detailHeaderOptions, title: 'Delete Account' }}
       />
     </Stack.Navigator>
   );

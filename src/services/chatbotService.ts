@@ -22,6 +22,33 @@ export function userMessage(text: string): ChatMessage {
   return { id: uid(), role: 'user', text, timestamp: new Date() };
 }
 
+export const TREATMENT_CATEGORIES = ['IVF', 'Dental', 'Hair', 'Cosmetology', 'Ophthalmology'] as const;
+export type TreatmentCategory = (typeof TREATMENT_CATEGORIES)[number];
+
+export interface LeadCaptureData {
+  treatment?: string;
+  applicantName?: string;
+  mobileNumber?: string;
+  monthlyIncome?: string;
+  loanAmount?: string;
+  city?: string;
+  dob?: string;
+  pan?: string;
+}
+
+// The LMS /leads endpoint only persists a known set of fields, so the extended
+// KYC details captured in the chat flow are folded into the remarks string.
+export function buildLeadRemarks(data: LeadCaptureData): string {
+  const parts: string[] = [];
+  if (data.treatment) parts.push(`Treatment: ${data.treatment}`);
+  if (data.monthlyIncome) parts.push(`Monthly income: ₹${data.monthlyIncome}`);
+  if (data.city) parts.push(`City: ${data.city}`);
+  if (data.dob) parts.push(`DOB: ${data.dob}`);
+  if (data.pan) parts.push(`PAN: ${data.pan}`);
+  parts.push('Source: TrustivaSetu app chatbot');
+  return parts.join(' | ');
+}
+
 export async function fetchClinicForChat(clinicId: string): Promise<ClinicDetail | null> {
   try {
     const response = await apiClient.get(`/clinics/${clinicId}`);
@@ -56,11 +83,22 @@ const HELP_TEXT = `I can help you with:\n\n` +
   `• 📈 Recent lead performance\n` +
   `• 📑 Documentation checklist\n` +
   `• 🔄 Loan process steps\n` +
-  `• 🏥 Hospital information\n\n` +
+  `• 🏥 Hospital information\n` +
+  `• ⚡ Start instant approval for ₹75,000\n` +
+  `• 🔐 Account Aggregator guidance\n\n` +
   `Select a channel partner above and ask me anything!`;
 
 const QUICK_CHIPS_NO_CLINIC = ['How to select a partner?', 'Loan process', 'Documents needed', 'Help'];
-const QUICK_CHIPS_WITH_CLINIC = ['Contact info', 'Business potential', 'Lead status', 'Documents needed', 'Loan process'];
+const QUICK_CHIPS_WITH_CLINIC = [
+  'Capture a lead',
+  'Contact info',
+  'Business potential',
+  'Lead status',
+  'Documents needed',
+  'Loan process',
+  'Start instant approval',
+  'Account aggregator',
+];
 
 export function getGreeting(userName: string): ChatMessage {
   const first = userName.split(' ')[0];
@@ -72,8 +110,15 @@ export function getGreeting(userName: string): ChatMessage {
 
 export function getClinicSelectedMessage(clinicName: string): ChatMessage {
   return botMessage(
-    `Great! I've loaded details for **${clinicName}**.\n\nWhat would you like to know?`,
+    `Great! I've loaded details for **${clinicName}**.\n\nYou can ask about lead status, documents, contact info, or start the instant approval flow for ₹75,000. I can also guide you through secure Account Aggregator verification when you're ready.\n\nWhat would you like to know?`,
     QUICK_CHIPS_WITH_CLINIC,
+  );
+}
+
+export function getAccountAggregatorMessage(clinicName?: string): ChatMessage {
+  return botMessage(
+    `Account Aggregator is a secure consent-based verification route that helps verify income and bank data without manual uploads.\n\nFor **${clinicName ?? 'this partner'}**, you can complete the instant approval flow now and later connect the applicant through an aggregator partner for faster salary/income validation and credit decisioning.\n\nSay **Start instant approval** to begin, or ask me how Account Aggregator works.`,
+    ['Start instant approval', 'Help'],
   );
 }
 
@@ -97,6 +142,15 @@ export function generateBotResponse(input: string, ctx: BotResponseContext): Cha
       return botMessage(
         `**Documentation Required:**\n\n${DOCS_REQUIRED.join('\n')}`,
         ['Loan process', 'Help'],
+      );
+    }
+    if (q.includes('account aggregator') || q.includes('aggregator')) {
+      return getAccountAggregatorMessage();
+    }
+    if (q.includes('start instant approval') || q.includes('instant approval') || q.includes('75k')) {
+      return botMessage(
+        `Select a clinic first, then tap **Start instant approval** to begin a guided approval journey with applicant name, mobile, PAN, Aadhaar, bank account, and OTP verification.`,
+        QUICK_CHIPS_NO_CLINIC,
       );
     }
     if (q.includes('select') || q.includes('partner') || q.includes('how')) {
@@ -182,6 +236,19 @@ export function generateBotResponse(input: string, ctx: BotResponseContext): Cha
     return botMessage(
       `**Loan Process Steps:**\n\n${PROCESS_STEPS.join('\n')}`,
       ['Documents needed', 'Contact info'],
+    );
+  }
+
+  if (q.includes('account aggregator') || q.includes('aggregator')) {
+    return getAccountAggregatorMessage(ctx.clinicName);
+  }
+
+  if (q.includes('instant approval') || q.includes('75k') || q.includes('approval')) {
+    return botMessage(
+      `Nice! I can take you through the instant approval process now.
+
+Please share the applicant's full name to begin.`,
+      ['Help', 'Account aggregator'],
     );
   }
 

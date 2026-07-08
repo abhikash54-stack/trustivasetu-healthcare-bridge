@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View, Text as RNText } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/core';
 import { useMutation } from '@tanstack/react-query';
 
 import { signIn } from '../../store/slices/authSlice';
@@ -14,7 +15,6 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { Text } from '../../theme/theme';
 import { BRAND } from '../../theme/theme';
 import { APP_INFO } from '../../config/environment';
-
 const STATUS_MESSAGES: Record<string, string> = {
   INACTIVE: 'Your account is inactive. Please contact your administrator.',
   SUSPENDED: 'Your account has been suspended. Please contact your administrator.',
@@ -38,6 +38,8 @@ export function LoginScreen() {
   const [form, setForm] = useState<LoginCredentials>({ email: '', password: '' });
   const dispatch = useDispatch();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const heading: string = route.params?.heading ?? 'Welcome back';
 
   const { mutate: submitLogin, isPending } = useMutation({
     mutationFn: login,
@@ -71,8 +73,18 @@ export function LoginScreen() {
     submitLogin(form);
   };
 
+
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      {navigation.canGoBack() && (
+        <Text
+          variant="secondary"
+          style={styles.backLink}
+          onPress={() => navigation.goBack()}
+        >
+          ‹ Back
+        </Text>
+      )}
       <View style={styles.brandHeader}>
         <View style={styles.logoWrap}>
           <RNText style={styles.logoLetter}>T</RNText>
@@ -82,7 +94,7 @@ export function LoginScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text variant="header" marginBottom="md">Welcome back</Text>
+        <Text variant="header" marginBottom="md">{heading}</Text>
         <Text variant="body" marginBottom="lg">
           Manage healthcare finance leads, clinic partners, and disbursements — all in one place.
         </Text>
@@ -132,6 +144,11 @@ export function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  backLink: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginBottom: 12,
+  },
   container: {
     flexGrow: 1,
     backgroundColor: BRAND.primary,

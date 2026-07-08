@@ -40,6 +40,9 @@ export function LeadDetailsScreen({ route }: LeadDetailsScreenProps) {
   const queryResult = useQuery({
     queryKey: ['lead', leadId],
     queryFn: () => fetchLeadById(leadId),
+    // Real-time sync: reflect LMS status/approval/disbursal changes every 30s.
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   }) as any;
   const lead = queryResult.data as LeadDetail | undefined;
   const isLoading: boolean = queryResult.isLoading;

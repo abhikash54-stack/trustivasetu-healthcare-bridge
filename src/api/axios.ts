@@ -35,6 +35,17 @@ const _api = axios.create({
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 }) as any;
 
+function ensureSecureRequest(config: any) {
+  const url = String(config.baseURL ?? config.url ?? '');
+  if (!url.startsWith('https://')) {
+    throw new Error(`Blocked insecure request: ${url}`);
+  }
+  return config;
+}
+
+_public.interceptors.request.use(ensureSecureRequest, (error: any) => Promise.reject(error));
+_api.interceptors.request.use(ensureSecureRequest, (error: any) => Promise.reject(error));
+
 export const publicClient: HttpClient = _public;
 export const apiClient: HttpClient = _api;
 

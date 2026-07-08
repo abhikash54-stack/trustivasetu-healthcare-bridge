@@ -18,6 +18,7 @@ import { Text } from '../../theme/theme';
 import { BRAND } from '../../theme/theme';
 import { validateEmail } from '../../utils/validators';
 import { APP_INFO } from '../../config/environment';
+import { publicClient } from '../../api/axios';
 
 interface RequestForm {
   name: string;
@@ -30,19 +31,15 @@ interface RequestForm {
 const EMPTY: RequestForm = { name: '', email: '', phone: '', clinic: '', city: '' };
 
 async function submitAccessRequest(form: RequestForm): Promise<void> {
-  await (axios as any).post(
-    'https://lms.trustivasetu.com/api/enquiries/provider',
-    {
-      source: 'MOBILE_APP',
-      contactPerson: form.name.trim(),
-      email: form.email.trim().toLowerCase(),
-      mobile: form.phone.trim(),
-      clinicName: form.clinic.trim(),
-      city: form.city.trim(),
-      notes: 'Access request from TrustivaSetu mobile app',
-    },
-    { headers: { 'Content-Type': 'application/json' } },
-  );
+  await publicClient.post('/enquiries/provider', {
+    source: 'MOBILE_APP',
+    contactPerson: form.name.trim(),
+    email: form.email.trim().toLowerCase(),
+    mobile: form.phone.trim(),
+    clinicName: form.clinic.trim(),
+    city: form.city.trim(),
+    notes: 'Access request from TrustivaSetu mobile app',
+  });
 }
 
 export function SignUpScreen() {

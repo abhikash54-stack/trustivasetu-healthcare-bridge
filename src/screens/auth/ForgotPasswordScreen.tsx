@@ -21,16 +21,17 @@ export function ForgotPasswordScreen() {
       setSubmitted(true);
     },
     onError: (error: any) => {
-      const message: string = error?.response?.data?.message ?? 'Unable to send reset email. Please try again.';
+      const message: string = error?.message ?? 'Unable to send reset email. Please try again.';
       Alert.alert('Request failed', message);
     },
   });
 
   const handleSubmit = () => {
-    if (!validateEmail(email)) {
+    const normalizedEmail = email.trim();
+    if (!validateEmail(normalizedEmail)) {
       return Alert.alert('Invalid email', 'Please provide a valid email address.');
     }
-    submitReset(email);
+    submitReset(normalizedEmail);
   };
 
   if (submitted) {
@@ -66,7 +67,7 @@ export function ForgotPasswordScreen() {
           <PrimaryButton
             label={isPending ? 'Sending...' : 'Send reset link'}
             onPress={handleSubmit}
-            disabled={isPending}
+            disabled={isPending || !email.trim()}
           />
           <Text
             variant="secondary"

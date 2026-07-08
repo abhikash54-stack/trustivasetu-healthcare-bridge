@@ -13,11 +13,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { fetchClinics } from '../../services/clinicService';
+import { createLead } from '../../services/leadService';
+import { invalidateQueries } from '../../api/queryClient';
 import {
   ChatMessage,
   botMessage,
@@ -26,6 +29,8 @@ import {
   getGreeting,
   getClinicSelectedMessage,
   fetchClinicForChat,
+  TREATMENT_CATEGORIES,
+  buildLeadRemarks,
 } from '../../services/chatbotService';
 import { Clinic, ClinicDetail } from '../../types/auth';
 import { BRAND } from '../../theme/theme';
@@ -172,6 +177,7 @@ function ClinicPicker({ visible, clinics, onSelect, onClose, search, onSearch }:
 
 export function ChatbotScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const user = useSelector((s: RootState) => s.auth.user);
   const flatListRef = useRef<FlatList>(null);
 
@@ -183,6 +189,47 @@ export function ChatbotScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [lastChips, setLastChips] = useState<string[]>([]);
+  const [submittingLead, setSubmittingLead] = useState(false);
+  const [lastLeadId, setLastLeadId] = useState<string | null>(null);
+
+  // Guided lead-capture flow (hospital → treatment → KYC → submit real lead).
+  const [leadFlow, setLeadFlow] = useState<{
+    stepIndex: number;
+    data: {
+      treatment?: string;
+      applicantName?: string;
+      mobileNumber?: string;
+      monthlyIncome?: string;
+      loanAmount?: string;
+      city?: string;
+      dob?: string;
+      pan?: string;
+    };
+  } | null>(null);
+
+  const QUICK_CHIPS_NO_CLINIC = ['How to select a partner?', 'Loan process', 'Documents needed', 'Help'];
+  const QUICK_CHIPS_WITH_CLINIC = [
+    'Capture a lead',
+    'Contact info',
+    'Business potential',
+    'Lead status',
+    'Documents needed',
+    'Loan process',
+    'Start instant approval',
+    'Account aggregator',
+  ];
+
+  const [approvalFlow, setApprovalFlow] = useState<{
+    stepIndex: number;
+    data: {
+      applicantName?: string;
+      mobileNumber?: string;
+      panNumber?: string;
+      aadhaarNumber?: string;
+      bankAccount?: string;
+      otp?: string;
+    };
+  } | null>(null);
 
   const clinicsResult = useQuery({
     queryKey: ['clinics'],
@@ -216,7 +263,244 @@ export function ChatbotScreen() {
     setLoadingDetail(false);
     const response = getClinicSelectedMessage(clinic.name);
     addMessage(response);
+    addMessage(botMessage(
+      `Ready to register a new patient lead for **${clinic.name}**?
+
+Tap **Capture a lead** and I'll collect the treatment, customer name, mobile number, monthly income and loan amount, then submit it to the LMS instantly.
+
+You can also tap **Start instant approval** for the guided ₹75,000 approval demo.`,
+      ['Capture a lead', 'Start instant approval', 'Account aggregator'],
+    ));
   }, [addMessage]);
+
+  const normalizeDigits = (value: string) => value.replace(/\D/g, '');
+  const isValidMobile = (value: string) => normalizeDigits(value).length === 10;
+  const isValidPan = (value: string) => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value.toUpperCase().trim());
+  const isValidAadhaar = (value: string) => normalizeDigits(value).length === 12;
+  const isValidBankAccount = (value: string) => {
+    const length = normalizeDigits(value).length;
+    return length >= 9 && length <= 18;
+  };
+  const isValidOtp = (value: string) => {
+    const length = normalizeDigits(value).length;
+    return length >= 4 && length <= 6;
+  };
+
+  const getApprovalPrompt = (step: number) => {
+    const prompts = [
+      'What is the applicant full name?',
+      'What is the applicant mobile number? Please enter 10 digits.',
+      'Please share the applicant PAN number (10 characters).',
+      'Please share the applicant Aadhaar number (12 digits).',
+      'Please share the bank account number linked to the applicant.',
+      'Finally, enter the OTP sent to the applicant mobile number.',
+    ];
+    return prompts[step] || 'Please provide the requested detail.';
+  };
+
+  const compileApprovalResult = (data: any) => {
+    return `Great! I've verified the applicant details for **${selectedClinic?.name || 'this partner'}**.
+
+` +
+      `• Name: ${data.applicantName}
+` +
+      `• Mobile: ${data.mobileNumber}
+` +
+      `• PAN: ${data.panNumber}
+` +
+      `• Aadhaar: ${data.aadhaarNumber}
+` +
+      `• Bank account: ${data.bankAccount}
+
+` +
+      `I have simulated these checks:
+` +
+      `• Aadhaar address verification
+` +
+      `• PAN / CIBIL readiness check
+` +
+      `• Salary / income indicator review from bank message patterns
+
+` +
+      `✅ Instant approval available for ₹75,000.
+
+Next step: collect documents and schedule the loan disbursal. You can also use **Account aggregator** later for automated salary verification and faster credit decisions.`;
+  };
+
+  const getApprovalIntroMessage = (clinicName: string) => {
+    return botMessage(
+      `Let's start the instant approval flow for **${clinicName}**.
+
+I will ask for applicant details step by step:
+1. Applicant name
+2. Mobile number
+3. PAN number
+4. Aadhaar number
+5. Bank account number
+6. OTP verification
+
+Please share the applicant's full name to begin.`,
+      ['Help', 'Cancel', 'Account aggregator'],
+    );
+  };
+
+  const LEAD_STEP_CITY = 5;
+  const LEAD_STEP_DOB = 6;
+  const LEAD_STEP_PAN = 7;
+  const LEAD_TOTAL_STEPS = 8;
+
+  const getLeadPrompt = (step: number): { text: string; chips: string[] } => {
+    switch (step) {
+      case 0:
+        return { text: 'Which treatment is this lead for? Tap a category below.', chips: [...TREATMENT_CATEGORIES, 'Cancel'] };
+      case 1:
+        return { text: "What is the customer's full name?", chips: ['Cancel'] };
+      case 2:
+        return { text: "What is the customer's mobile number? (10 digits)", chips: ['Cancel'] };
+      case 3:
+        return { text: "What is the customer's monthly salary / income? (in ₹)", chips: ['Cancel'] };
+      case 4:
+        return { text: 'What loan amount is required? (in ₹)', chips: ['Cancel'] };
+      case LEAD_STEP_CITY:
+        return { text: 'Which city is the customer in? (or tap Skip)', chips: ['Skip', 'Cancel'] };
+      case LEAD_STEP_DOB:
+        return { text: 'Date of birth? Format DD-MM-YYYY (or tap Skip)', chips: ['Skip', 'Cancel'] };
+      case LEAD_STEP_PAN:
+        return { text: 'PAN number? (10 characters, or tap Skip)', chips: ['Skip', 'Cancel'] };
+      default:
+        return { text: 'Please provide the requested detail.', chips: ['Cancel'] };
+    }
+  };
+
+  const isValidDob = (value: string) => /^\d{2}-\d{2}-\d{4}$/.test(value.trim());
+
+  const submitLead = useCallback(async (data: NonNullable<typeof leadFlow>['data']) => {
+    if (!selectedClinic) return;
+    setSubmittingLead(true);
+    addMessage(botMessage('Submitting the lead to the LMS… one moment.'));
+    try {
+      const remarks = buildLeadRemarks(data);
+      const lead = await createLead({
+        applicantName: data.applicantName ?? '',
+        phone: data.mobileNumber ?? '',
+        email: '',
+        amount: data.loanAmount ?? '',
+        lenderId: '',
+        clinicId: selectedClinic.id,
+        applicationDate: '',
+        remarks,
+      });
+      setLastLeadId(lead.id);
+      // Push the new lead into the rest of the app immediately.
+      invalidateQueries(['leads'], ['dashboard']);
+      addMessage(botMessage(
+        `✅ Lead created successfully!
+
+**Lead ID:** ${lead.id || '(assigned by LMS)'}
+**Customer:** ${data.applicantName}
+**Mobile:** ${data.mobileNumber}
+**Treatment:** ${data.treatment}
+**Loan amount:** ₹${data.loanAmount}
+**Partner:** ${selectedClinic.name}
+
+The lead is now live in the LMS and will sync here automatically. Tap **Track status** to follow its progress (Submitted → Under Review → Approved → Disbursed).`,
+        ['Track status', 'Capture a lead', 'Lead status'],
+      ));
+    } catch (err: any) {
+      const msg = err?.response?.data?.message
+        || (err?.message?.includes('Network') ? 'Network error — please check your connection and try again.' : null)
+        || 'Could not submit the lead right now. Please try again in a moment.';
+      addMessage(botMessage(`⚠️ ${msg}`, ['Capture a lead', 'Help']));
+    } finally {
+      setSubmittingLead(false);
+    }
+  }, [selectedClinic, addMessage]);
+
+  // Returns true if the message was consumed by the active lead-capture flow.
+  const handleLeadFlowInput = (value: string): boolean => {
+    if (!leadFlow) return false;
+    const step = leadFlow.stepIndex;
+    const lower = value.toLowerCase();
+
+    if (lower === 'cancel') {
+      setLeadFlow(null);
+      addMessage(botMessage('Lead capture canceled. Tap **Capture a lead** to start again.', QUICK_CHIPS_WITH_CLINIC));
+      return true;
+    }
+
+    const advance = (patch: Partial<NonNullable<typeof leadFlow>['data']>, nextStep: number) => {
+      const nextData = { ...leadFlow.data, ...patch };
+      if (nextStep >= LEAD_TOTAL_STEPS) {
+        setLeadFlow(null);
+        submitLead(nextData);
+        return;
+      }
+      setLeadFlow({ stepIndex: nextStep, data: nextData });
+      const prompt = getLeadPrompt(nextStep);
+      addMessage(botMessage(prompt.text, prompt.chips));
+    };
+
+    const skip = lower === 'skip';
+
+    switch (step) {
+      case 0: {
+        const match = TREATMENT_CATEGORIES.find((t) => t.toLowerCase() === lower);
+        if (!match) {
+          addMessage(botMessage('Please pick a treatment category from the options below.', [...TREATMENT_CATEGORIES, 'Cancel']));
+          return true;
+        }
+        advance({ treatment: match }, 1);
+        return true;
+      }
+      case 1:
+        if (value.trim().length < 2) {
+          addMessage(botMessage('Please enter the full name.', ['Cancel']));
+          return true;
+        }
+        advance({ applicantName: value.trim() }, 2);
+        return true;
+      case 2:
+        if (!isValidMobile(value)) {
+          addMessage(botMessage('Please enter a valid 10-digit mobile number.', ['Cancel']));
+          return true;
+        }
+        advance({ mobileNumber: normalizeDigits(value) }, 3);
+        return true;
+      case 3:
+        if (!normalizeDigits(value)) {
+          addMessage(botMessage('Please enter the monthly income as a number (in ₹).', ['Cancel']));
+          return true;
+        }
+        advance({ monthlyIncome: normalizeDigits(value) }, 4);
+        return true;
+      case 4:
+        if (!normalizeDigits(value)) {
+          addMessage(botMessage('Please enter the required loan amount as a number (in ₹).', ['Cancel']));
+          return true;
+        }
+        advance({ loanAmount: normalizeDigits(value) }, LEAD_STEP_CITY);
+        return true;
+      case LEAD_STEP_CITY:
+        advance({ city: skip ? undefined : value.trim() }, LEAD_STEP_DOB);
+        return true;
+      case LEAD_STEP_DOB:
+        if (!skip && !isValidDob(value)) {
+          addMessage(botMessage('Please enter the date of birth as DD-MM-YYYY, or tap Skip.', ['Skip', 'Cancel']));
+          return true;
+        }
+        advance({ dob: skip ? undefined : value.trim() }, LEAD_STEP_PAN);
+        return true;
+      case LEAD_STEP_PAN:
+        if (!skip && !isValidPan(value)) {
+          addMessage(botMessage('PAN should be 10 characters (AAAAA9999A), or tap Skip.', ['Skip', 'Cancel']));
+          return true;
+        }
+        advance({ pan: skip ? undefined : value.toUpperCase().trim() }, LEAD_TOTAL_STEPS);
+        return true;
+      default:
+        return false;
+    }
+  };
 
   const handleSend = useCallback((text?: string) => {
     const q = (text ?? input).trim();
@@ -224,14 +508,132 @@ export function ChatbotScreen() {
     setInput('');
     const um = userMessage(q);
     addMessage(um);
+
+    // Active lead-capture flow consumes the input directly.
+    if (leadFlow) {
+      handleLeadFlowInput(q);
+      return;
+    }
+
+    if (approvalFlow) {
+      const step = approvalFlow.stepIndex;
+      const value = q.trim();
+      const lowerValue = value.toLowerCase();
+
+      if (lowerValue === 'cancel') {
+        setApprovalFlow(null);
+        addMessage(botMessage('Approval flow canceled. You can start again anytime using Start instant approval.', QUICK_CHIPS_WITH_CLINIC));
+        return;
+      }
+
+      if (lowerValue === 'help') {
+        addMessage(botMessage(`Sure! ${getApprovalPrompt(step)} Please answer the requested detail.`, ['Help', 'Cancel']));
+        return;
+      }
+
+      if (step === 0) {
+        setApprovalFlow((prev) => prev && ({ ...prev, stepIndex: 1, data: { ...prev.data, applicantName: value } }));
+        addMessage(botMessage(getApprovalPrompt(1), ['Help', 'Cancel']));
+        return;
+      }
+
+      if (step === 1) {
+        if (!isValidMobile(value)) {
+          addMessage(botMessage('Please enter a valid 10-digit mobile number.', ['Help', 'Cancel']));
+          return;
+        }
+        setApprovalFlow((prev) => prev && ({ ...prev, stepIndex: 2, data: { ...prev.data, mobileNumber: normalizeDigits(value) } }));
+        addMessage(botMessage(getApprovalPrompt(2), ['Help', 'Cancel']));
+        return;
+      }
+
+      if (step === 2) {
+        if (!isValidPan(value)) {
+          addMessage(botMessage('PAN should be 10 characters in the format AAAAA9999A. Please enter the PAN again.', ['Help', 'Cancel']));
+          return;
+        }
+        setApprovalFlow((prev) => prev && ({ ...prev, stepIndex: 3, data: { ...prev.data, panNumber: value.toUpperCase().trim() } }));
+        addMessage(botMessage(getApprovalPrompt(3), ['Help', 'Cancel']));
+        return;
+      }
+
+      if (step === 3) {
+        if (!isValidAadhaar(value)) {
+          addMessage(botMessage('Aadhaar number must be 12 digits. Please enter the Aadhaar number again.', ['Help', 'Cancel']));
+          return;
+        }
+        setApprovalFlow((prev) => prev && ({ ...prev, stepIndex: 4, data: { ...prev.data, aadhaarNumber: normalizeDigits(value) } }));
+        addMessage(botMessage(getApprovalPrompt(4), ['Help', 'Cancel']));
+        return;
+      }
+
+      if (step === 4) {
+        if (!isValidBankAccount(value)) {
+          addMessage(botMessage('Please enter a valid bank account number between 9 and 18 digits.', ['Help', 'Cancel']));
+          return;
+        }
+        setApprovalFlow((prev) => prev && ({ ...prev, stepIndex: 5, data: { ...prev.data, bankAccount: normalizeDigits(value) } }));
+        addMessage(botMessage(getApprovalPrompt(5), ['Help', 'Cancel']));
+        return;
+      }
+
+      if (step === 5) {
+        if (!isValidOtp(value)) {
+          addMessage(botMessage('OTP must be 4 to 6 digits. Please enter the OTP received on the applicant mobile.', ['Help', 'Cancel']));
+          return;
+        }
+        const finalData = { ...approvalFlow.data, otp: normalizeDigits(value) };
+        setApprovalFlow(null);
+        addMessage(botMessage(compileApprovalResult(finalData), ['Account aggregator', 'Help']));
+        return;
+      }
+    }
+
+    const lowerQ = q.toLowerCase();
+
+    // Start the guided lead-capture flow.
+    if (lowerQ.includes('capture a lead') || lowerQ === 'new lead' || lowerQ === 'create lead') {
+      if (!selectedClinic) {
+        addMessage(botMessage('Select a hospital / clinic above first, then I can capture a lead for it.', QUICK_CHIPS_NO_CLINIC));
+        return;
+      }
+      setLeadFlow({ stepIndex: 0, data: {} });
+      const prompt = getLeadPrompt(0);
+      addMessage(botMessage(
+        `Let's capture a new lead for **${selectedClinic.name}**.\n\n${prompt.text}`,
+        prompt.chips,
+      ));
+      return;
+    }
+
+    // Jump to the lead status tracking screen for the most recent submission.
+    if (lowerQ.includes('track status')) {
+      if (lastLeadId) {
+        navigation.navigate('LeadDetails', { leadId: lastLeadId });
+      } else {
+        addMessage(botMessage('No recent lead to track yet. Tap **Capture a lead** to create one.', QUICK_CHIPS_WITH_CLINIC));
+      }
+      return;
+    }
+
     setTimeout(() => {
+      if (lowerQ.includes('start instant approval') || lowerQ.includes('instant approval') || lowerQ.includes('75k')) {
+        if (!selectedClinic) {
+          addMessage(botMessage('Select a clinic first to begin the instant approval flow.', QUICK_CHIPS_NO_CLINIC));
+          return;
+        }
+        setApprovalFlow({ stepIndex: 0, data: {} });
+        addMessage(getApprovalIntroMessage(selectedClinic.name));
+        return;
+      }
+
       const reply = generateBotResponse(q, {
         clinic: clinicDetail,
         clinicName: selectedClinic?.name,
       });
       addMessage(reply);
     }, 400);
-  }, [input, clinicDetail, selectedClinic, addMessage]);
+  }, [input, addMessage, approvalFlow, leadFlow, clinicDetail, selectedClinic, lastLeadId, navigation, submitLead]);
 
   const handleChip = useCallback((chip: string) => {
     handleSend(chip);
@@ -300,10 +702,12 @@ export function ChatbotScreen() {
       />
 
       {/* Loading indicator */}
-      {loadingDetail && (
+      {(loadingDetail || submittingLead) && (
         <View style={styles.loadingRow}>
           <ActivityIndicator size="small" color={BRAND.primary} />
-          <RNText style={styles.loadingText}>Loading clinic details...</RNText>
+          <RNText style={styles.loadingText}>
+            {submittingLead ? 'Submitting lead to LMS...' : 'Loading clinic details...'}
+          </RNText>
         </View>
       )}
 
@@ -456,9 +860,11 @@ const styles = StyleSheet.create({
   bubbleBot: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#DCEAE1',
   },
   bubbleUser: {
-    backgroundColor: BRAND.primary,
+    backgroundColor: BRAND.primaryDark,
     borderTopRightRadius: 4,
   },
   bubbleText: {
@@ -466,7 +872,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   bubbleTextBot: {
-    color: '#1A2D1E',
+    color: '#10221A',
   },
   bubbleTextUser: {
     color: '#FFFFFF',
@@ -502,12 +908,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BRAND.primaryLight,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1.5,
-    borderColor: BRAND.accent,
+    borderColor: BRAND.primary,
     elevation: 1,
     shadowColor: '#000',
     shadowOpacity: 0.04,
@@ -516,8 +922,8 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: BRAND.primary,
+    fontWeight: '700',
+    color: '#0F2A1D',
   },
   inputBar: {
     flexDirection: 'row',

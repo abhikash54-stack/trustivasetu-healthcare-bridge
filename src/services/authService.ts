@@ -10,6 +10,16 @@ const authHttp = axios.create({
   headers: { Accept: 'application/json' },
 }) as any;
 
+function ensureSecureAuthRequest(config: any) {
+  const url = String(config.baseURL ?? config.url ?? '');
+  if (!url.startsWith('https://')) {
+    throw new Error(`Blocked insecure auth request: ${url}`);
+  }
+  return config;
+}
+
+authHttp.interceptors.request.use(ensureSecureAuthRequest, (error: any) => Promise.reject(error));
+
 export interface LoginResult {
   user: UserProfile;
 }
@@ -138,7 +148,18 @@ export async function requestPasswordReset(email: string): Promise<void> {
   try {
     await authHttp.post('/api/auth/forgot-password', { email });
   } catch (err: any) {
-    if (err?.response?.status !== 404) throw err;
+    if (err?.response?.status === 404) {
+      return;
+    }
+
+    const status = err?.response?.status;
+    if (status === 400 || status === 422) {
+      throw new Error('Please enter a valid email address.');
+    }
+    if (status === 429) {
+      throw new Error('Too many requests. Please wait a moment before trying again.');
+    }
+    throw new Error('Unable to send reset instructions right now. Please try again shortly.');
   }
 }
 

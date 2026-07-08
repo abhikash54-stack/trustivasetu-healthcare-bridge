@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, View, Text as RNText, Linking, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BRAND } from '../../theme/theme';
 import { APP_INFO, CURRENT_ENV } from '../../config/environment';
@@ -26,6 +27,7 @@ function InfoRow({ icon, label, value, onPress }: { icon: string; label: string;
 
 export function AboutScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
 
   return (
     <ScrollView
@@ -78,8 +80,9 @@ export function AboutScreen() {
       {/* Legal */}
       <View style={styles.card}>
         <RNText style={styles.sectionTitle}>Legal</RNText>
-        <InfoRow icon="privacy-tip" label="Privacy Policy" value="View Privacy Policy" onPress={() => {}} />
-        <InfoRow icon="gavel" label="Terms & Conditions" value="View Terms & Conditions" onPress={() => {}} />
+        <InfoRow icon="privacy-tip" label="Privacy Policy" value="View Privacy Policy" onPress={() => navigation.navigate('PrivacyPolicy')} />
+        <InfoRow icon="gavel" label="Terms & Conditions" value="View Terms & Conditions" onPress={() => navigation.navigate('TermsAndConditions')} />
+        <InfoRow icon="support-agent" label="Support & Grievance" value="Contact the team" onPress={() => navigation.navigate('Support')} />
         <InfoRow icon="security" label="Data Protection" value="DPDPA 2023 Compliant" />
       </View>
 

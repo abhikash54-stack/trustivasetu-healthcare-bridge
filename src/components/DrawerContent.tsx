@@ -23,6 +23,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'Chatbot',            label: 'Partner Assistant',      icon: 'support-agent',       roles: null },
   { key: 'Leads',              label: 'Leads',                  icon: 'people',              roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
   { key: 'ClinicOnboarding',   label: 'Channel Partners',       icon: 'business',            roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
+  { key: 'ChannelPartnerOnboarding', label: 'Partner Onboarding', icon: 'how-to-reg',        roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
   { key: 'Enquiries',          label: 'Enquiries',              icon: 'assignment',          roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
   { key: 'Reports',            label: 'Reports',                icon: 'bar-chart',           roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'] },
   { key: 'Notifications',      label: 'Notifications',          icon: 'notifications-none',  roles: null },
