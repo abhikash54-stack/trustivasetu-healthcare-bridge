@@ -16,6 +16,9 @@ export interface ReleaseMetadata {
   signature?: string;
   signatureAlgorithm?: string;
   source?: string;
+  channel?: string;
+  rollbackVersion?: string;
+  rollbackUrl?: string;
 }
 
 export interface AppVersionInfo {
@@ -86,6 +89,7 @@ function normalizeMetadata(payload: any): ReleaseMetadata {
 
   const apkUrl = ensurePermanentPortalUrl(payload.apkUrl ? String(payload.apkUrl).trim() : undefined, 'APK URL');
   const iOSAppStoreUrl = ensurePermanentPortalUrl(payload.iOSAppStoreUrl ? String(payload.iOSAppStoreUrl).trim() : undefined, 'iOS TestFlight URL');
+  const rollbackUrl = ensurePermanentPortalUrl(payload.rollbackUrl ? String(payload.rollbackUrl).trim() : undefined, 'Rollback URL');
 
   return {
     version,
@@ -101,6 +105,9 @@ function normalizeMetadata(payload: any): ReleaseMetadata {
     signature: payload.signature ? String(payload.signature) : undefined,
     signatureAlgorithm: payload.signatureAlgorithm ? String(payload.signatureAlgorithm) : undefined,
     source: payload.source ? String(payload.source) : 'manifest',
+    channel: payload.channel ? String(payload.channel) : undefined,
+    rollbackVersion: payload.rollbackVersion ? String(payload.rollbackVersion) : undefined,
+    rollbackUrl,
   };
 }
 

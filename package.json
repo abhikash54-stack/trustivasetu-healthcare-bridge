@@ -1,6 +1,6 @@
 {
   "name": "trustivasetu-healthcare-bridge",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "main": "index.ts",
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -49,6 +49,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "release:sync": "node ./scripts/sync-release.mjs",
+    "release:check": "node ./scripts/sync-release.mjs --check",
     "build:staging": "eas build --profile staging --platform android --non-interactive",
     "build:preview": "eas build --profile preview --platform android --non-interactive",
     "build:production:android": "eas build --profile production --platform android --non-interactive",

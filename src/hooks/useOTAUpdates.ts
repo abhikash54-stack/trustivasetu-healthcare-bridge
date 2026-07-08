@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert, Linking } from 'react-native';
+import { Alert, AppState, Linking, type AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
@@ -75,6 +75,7 @@ export function useOTAUpdates() {
     if (__DEV__) return;
 
     let isMounted = true;
+    const appLaunchTime = Date.now();
 
     async function checkAndApplyUpdate() {
       const result = await checkForAvailableUpdates(false);
@@ -84,10 +85,19 @@ export function useOTAUpdates() {
       }
     }
 
-    checkAndApplyUpdate();
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState !== 'active') return;
+      const elapsed = Date.now() - appLaunchTime;
+      if (elapsed < 10000) return;
+      checkAndApplyUpdate().catch(() => undefined);
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    checkAndApplyUpdate().catch(() => undefined);
 
     return () => {
       isMounted = false;
+      subscription.remove();
     };
   }, []);
 }

@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 
 export type AppEnvironment = 'development' | 'staging' | 'production';
+export type AppReleaseChannel = 'preview' | 'production';
 
 interface EnvironmentConfig {
   name: string;
@@ -16,6 +17,8 @@ interface EnvironmentConfig {
   androidDownloadUrl: string;
   iosTestFlightUrl: string;
   debugMode: boolean;
+  releaseChannel: AppReleaseChannel;
+  previewUpdateApiUrl: string;
 }
 
 function ensureHttps(url: string, allowLocalhost = false): string {
@@ -43,6 +46,8 @@ const configs: Record<AppEnvironment, EnvironmentConfig> = {
     androidDownloadUrl: 'https://app.trustivasetu.com/latest.apk',
     iosTestFlightUrl: 'https://app.trustivasetu.com',
     debugMode: true,
+    releaseChannel: 'preview',
+    previewUpdateApiUrl: 'https://app.trustivasetu.com/version.json',
   },
   staging: {
     name: 'Staging',
@@ -58,6 +63,8 @@ const configs: Record<AppEnvironment, EnvironmentConfig> = {
     androidDownloadUrl: 'https://app.trustivasetu.com/latest.apk',
     iosTestFlightUrl: 'https://app.trustivasetu.com',
     debugMode: true,
+    releaseChannel: 'preview',
+    previewUpdateApiUrl: 'https://app.trustivasetu.com/version.json',
   },
   production: {
     name: 'Production',
@@ -73,12 +80,19 @@ const configs: Record<AppEnvironment, EnvironmentConfig> = {
     androidDownloadUrl: 'https://app.trustivasetu.com/latest.apk',
     iosTestFlightUrl: 'https://app.trustivasetu.com',
     debugMode: false,
+    releaseChannel: 'production',
+    previewUpdateApiUrl: 'https://app.trustivasetu.com/version.json',
   },
 };
 
 const appEnv = (Constants.expoConfig?.extra?.APP_ENV ?? 'production') as AppEnvironment;
+const appChannel = (Constants.expoConfig?.extra?.APP_CHANNEL ?? (appEnv === 'production' ? 'production' : 'preview')) as AppReleaseChannel;
 
-export const ENV: EnvironmentConfig = configs[appEnv] ?? configs.production;
+const baseConfig = configs[appEnv] ?? configs.production;
+export const ENV: EnvironmentConfig = {
+  ...baseConfig,
+  releaseChannel: appChannel,
+};
 export const CURRENT_ENV: AppEnvironment = appEnv;
 
 export const APP_INFO = {
@@ -92,6 +106,7 @@ export const APP_INFO = {
   website: ENV.websiteUrl,
   releaseDate: ENV.releaseDate,
   updateApiUrl: ENV.updateApiUrl,
+  releaseChannel: ENV.releaseChannel,
   releaseNotesUrl: ENV.releaseNotesUrl,
   downloadPortalUrl: ENV.downloadPortalUrl,
   androidDownloadUrl: ENV.androidDownloadUrl,

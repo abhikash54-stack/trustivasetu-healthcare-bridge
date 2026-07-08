@@ -2,14 +2,14 @@
   "expo": {
     "name": "TrustivaSetu",
     "slug": "trustivasetu",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aarthsetu.trustivasetu",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "Required for document uploads and KYC verification.",
         "NSPhotoLibraryUsageDescription": "Required for uploading clinic and lead documents.",
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.aarthsetu.trustivasetu",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#006B3C",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -32,12 +32,6 @@
         "WRITE_EXTERNAL_STORAGE",
         "ACCESS_FINE_LOCATION",
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "ACCESS_FINE_LOCATION",
-        "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
       ]
     },
@@ -46,6 +40,7 @@
     },
     "extra": {
       "APP_ENV": "production",
+      "APP_CHANNEL": "production",
       "eas": {
         "projectId": "98b5cebf-5f97-4367-8422-573cbb574c87"
       }

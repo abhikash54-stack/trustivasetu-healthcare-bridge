@@ -12,12 +12,14 @@ import { BRAND } from '../../theme/theme';
 
 export function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const navigation = useNavigation<any>();
 
   const { mutate: submitReset, isPending } = useMutation({
     mutationFn: requestPasswordReset,
     onSuccess: () => {
+      setSubmittedEmail(email.trim().toLowerCase());
       setSubmitted(true);
     },
     onError: (error: any) => {
@@ -27,7 +29,7 @@ export function ForgotPasswordScreen() {
   });
 
   const handleSubmit = () => {
-    const normalizedEmail = email.trim();
+    const normalizedEmail = email.trim().toLowerCase();
     if (!validateEmail(normalizedEmail)) {
       return Alert.alert('Invalid email', 'Please provide a valid email address.');
     }
@@ -40,7 +42,7 @@ export function ForgotPasswordScreen() {
         <View style={styles.card}>
           <Text variant="header" marginBottom="md">Check your email</Text>
           <Text variant="body" marginBottom="lg">
-            If an account exists for {email}, you will receive password reset instructions shortly.
+            If an account exists for {submittedEmail || email}, you will receive password reset instructions shortly.
           </Text>
           <PrimaryButton label="Back to sign in" onPress={() => navigation.navigate('Login')} />
         </View>

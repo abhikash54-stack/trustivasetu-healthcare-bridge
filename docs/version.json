@@ -1,8 +1,8 @@
 {
-  "version": "1.0.1",
-  "buildNumber": 2,
+  "version": "1.0.2",
+  "buildNumber": 3,
   "releaseDate": "2026-07-08",
-  "releaseNotes": "Production-ready update portal, OTA checks, settings diagnostics, and permanent download experience for app.trustivasetu.com.",
+  "releaseNotes": "Enterprise hardening update: synchronized release metadata, stronger password policy, improved OTA handling, and production-ready deployment docs.",
   "apkUrl": "https://app.trustivasetu.com/latest.apk",
   "mandatory": false,
   "minimumSupportedVersion": "1.0.0",
