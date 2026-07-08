@@ -106,8 +106,8 @@ const styles = StyleSheet.create({
     width: SCREEN_HEIGHT * 0.7,
     height: SCREEN_HEIGHT * 0.7,
     borderRadius: SCREEN_HEIGHT * 0.35,
-    backgroundColor: BRAND.primary,
-    opacity: 0.35,
+    backgroundColor: BRAND.accent,
+    opacity: 0.12,
   },
   backdropGlowBottom: {
     position: 'absolute',
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     height: SCREEN_HEIGHT * 0.6,
     borderRadius: SCREEN_HEIGHT * 0.3,
     backgroundColor: BRAND.accent,
-    opacity: 0.25,
+    opacity: 0.2,
   },
   safe: {
     flex: 1,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   buttonTextPrimary: {
-    color: '#002F1A',
+    color: '#07111f',
   },
   buttonTextSecondary: {
     color: '#FFFFFF',

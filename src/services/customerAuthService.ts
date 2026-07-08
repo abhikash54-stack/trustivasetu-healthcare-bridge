@@ -90,6 +90,15 @@ export async function loginWithEmail(email: string, password: string) {
   }
 }
 
+export async function forgotPassword(email: string) {
+  try {
+    const res = await http.post('/public/customer/forgot-password', { email });
+    return res.data as { success: true; message: string };
+  } catch (err: any) {
+    throw new Error(extractErrorMessage(err, 'Could not process request. Please try again.'));
+  }
+}
+
 export async function sendLoginOtp(phone: string) {
   try {
     await http.post('/public/customer/login/phone/send-otp', { phone });

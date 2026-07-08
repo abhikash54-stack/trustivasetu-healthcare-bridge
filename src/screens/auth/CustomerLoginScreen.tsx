@@ -12,6 +12,7 @@ import {
   sendSignupOtp,
   verifySignupOtp,
   loginWithEmail,
+  forgotPassword,
   sendLoginOtp,
   verifyLoginOtp,
 } from '../../services/customerAuthService';
@@ -81,6 +82,21 @@ export function CustomerLoginScreen() {
     }
 
     goToDashboard(token, customer);
+  }
+
+  async function handleForgotPassword() {
+    if (!validateEmail(email)) {
+      return Alert.alert('Enter your email', 'Type your registered email above first, then tap "Forgot password?" again.');
+    }
+    setLoading(true);
+    try {
+      const res = await forgotPassword(email.trim());
+      Alert.alert('Check your email', res.message);
+    } catch (err: any) {
+      Alert.alert('Something went wrong', err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleEmailSubmit() {
@@ -214,13 +230,18 @@ export function CustomerLoginScreen() {
                 onChangeText={setEmail}
               />
               {mode === 'login' && (
-                <FormInput
-                  label="Password"
-                  placeholder="••••••••"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
+                <>
+                  <FormInput
+                    label="Password"
+                    placeholder="••••••••"
+                    secureTextEntry
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                  <Text style={styles.forgotLink} onPress={handleForgotPassword}>
+                    Forgot password?
+                  </Text>
+                </>
               )}
               {mode === 'signup' && (
                 <Text style={styles.helperText}>
@@ -343,6 +364,14 @@ const styles = StyleSheet.create({
     color: '#5A7A63',
     marginBottom: 14,
     lineHeight: 18,
+  },
+  forgotLink: {
+    fontSize: 13,
+    color: BRAND.primary,
+    fontWeight: '700',
+    textAlign: 'right',
+    marginBottom: 14,
+    marginTop: -6,
   },
   resendText: {
     fontSize: 13,

@@ -1,21 +1,21 @@
 import { createText, createBox } from '@shopify/restyle';
 
 export const BRAND = {
-  primary: '#006B3C',
-  primaryDark: '#004A27',
-  primaryLight: '#E8F5EE',
-  accent: '#00A855',
-  drawerBg: '#002F1A',
-  drawerActive: 'rgba(0, 168, 85, 0.18)',
+  primary: '#07111f',
+  primaryDark: '#040a12',
+  primaryLight: '#1a2942',
+  accent: '#bef264',
+  drawerBg: '#07111f',
+  drawerActive: 'rgba(190, 242, 100, 0.18)',
   drawerBorder: 'rgba(255, 255, 255, 0.08)',
   drawerText: '#FFFFFF',
   drawerMuted: 'rgba(255, 255, 255, 0.60)',
-  headerBg: '#006B3C',
-  background: '#F0F7F3',
-  metricGreen: '#006B3C',
-  metricAccent: '#00A855',
+  headerBg: '#07111f',
+  background: '#07111f',
+  metricGreen: '#bef264',
+  metricAccent: '#bef264',
   metricAmber: '#F39C12',
-  metricDark: '#004A27',
+  metricDark: '#040a12',
 } as const;
 
 export const theme = {
