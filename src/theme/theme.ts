@@ -3,7 +3,7 @@ import { createText, createBox } from '@shopify/restyle';
 export const BRAND = {
   primary: '#07111f',
   primaryDark: '#040a12',
-  primaryLight: '#1a2942',
+  primaryLight: '#EEF6DC',
   accent: '#bef264',
   drawerBg: '#07111f',
   drawerActive: 'rgba(190, 242, 100, 0.18)',
@@ -11,7 +11,7 @@ export const BRAND = {
   drawerText: '#FFFFFF',
   drawerMuted: 'rgba(255, 255, 255, 0.60)',
   headerBg: '#07111f',
-  background: '#07111f',
+  background: '#F0F7F3',
   metricGreen: '#bef264',
   metricAccent: '#bef264',
   metricAmber: '#F39C12',
@@ -48,32 +48,32 @@ export const theme = {
   },
   textVariants: {
     defaults: {
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: '400' as const,
       color: 'text' as const,
     },
     header: {
-      fontSize: 26,
+      fontSize: 22,
       fontWeight: '700' as const,
       color: 'text' as const,
     },
     title: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '700' as const,
       color: 'text' as const,
     },
     body: {
-      fontSize: 15,
+      fontSize: 13,
       fontWeight: '500' as const,
       color: 'text' as const,
     },
     secondary: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '500' as const,
       color: 'textMuted' as const,
     },
     label: {
-      fontSize: 11,
+      fontSize: 10,
       fontWeight: '600' as const,
       color: 'textMuted' as const,
     },
