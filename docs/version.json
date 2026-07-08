@@ -3,11 +3,11 @@
   "buildNumber": 3,
   "releaseDate": "2026-07-08",
   "releaseNotes": "Enterprise hardening update: synchronized release metadata, stronger password policy, improved OTA handling, and production-ready deployment docs.",
-  "apkUrl": "https://app.trustivasetu.com/latest.apk",
+  "apkUrl": "https://github.com/abhikash54-stack/trustivasetu-healthcare-bridge/releases/latest/download/trustivasetu-latest.apk",
   "mandatory": false,
   "minimumSupportedVersion": "1.0.0",
   "maintenanceMode": false,
   "forceUpdate": false,
   "iOSAppStoreUrl": "https://app.trustivasetu.com",
-  "source": "github-pages"
+  "source": "github-releases"
 }

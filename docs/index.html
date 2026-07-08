@@ -48,7 +48,7 @@
           </div>
         </div>
         <div class="actions">
-          <a id="androidLink" class="btn btn-primary" href="latest.apk" download="trustivasetu-latest.apk">Download Android APK</a>
+          <a id="androidLink" class="btn btn-primary" href="https://github.com/abhikash54-stack/trustivasetu-healthcare-bridge/releases/latest/download/trustivasetu-latest.apk" download="trustivasetu-latest.apk">Download Android APK</a>
           <a class="btn btn-secondary" href="release-notes.html">View release notes</a>
         </div>
       </section>
@@ -69,7 +69,7 @@
         </div>
         <div class="card qr">
           <h2>Quick install</h2>
-          <img id="qrCode" alt="TrustivaSetu Android download QR" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://app.trustivasetu.com/latest.apk" />
+          <img id="qrCode" alt="TrustivaSetu Android download QR" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://github.com/abhikash54-stack/trustivasetu-healthcare-bridge/releases/latest/download/trustivasetu-latest.apk" />
           <p style="margin-top:12px; color:var(--muted);">Scan to download the Android APK directly.</p>
         </div>
       </section>
@@ -111,7 +111,7 @@
           document.getElementById('mandatory').textContent = data.mandatory ? 'Yes' : 'No';
           document.getElementById('releaseNotes').textContent = data.releaseNotes || 'No release notes available.';
           const androidLink = document.getElementById('androidLink');
-          androidLink.href = data.apkUrl || 'latest.apk';
+          androidLink.href = data.apkUrl || 'https://github.com/abhikash54-stack/trustivasetu-healthcare-bridge/releases/latest/download/trustivasetu-latest.apk';
           androidLink.download = `trustivasetu-${data.version || 'latest'}.apk`;
         } catch (error) {
           document.getElementById('version').textContent = '1.0.1';
