@@ -16,6 +16,7 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { changeCustomerPassword } from '../../services/customerAuthService';
 import { Text } from '../../theme/theme';
 import { BRAND } from '../../theme/theme';
+import { PASSWORD_POLICY_MESSAGE, validateStrongPassword } from '../../utils/validators';
 
 export function CustomerChangePasswordScreen() {
   const navigation = useNavigation<any>();
@@ -58,8 +59,8 @@ export function CustomerChangePasswordScreen() {
     if (!currentPassword.trim()) {
       return Alert.alert('Required', 'Enter your current password.');
     }
-    if (newPassword.length < 8) {
-      return Alert.alert('Weak password', 'New password must be at least 8 characters.');
+    if (!validateStrongPassword(newPassword)) {
+      return Alert.alert('Weak password', PASSWORD_POLICY_MESSAGE);
     }
     if (newPassword !== confirmPassword) {
       return Alert.alert('Password mismatch', 'New passwords do not match.');
@@ -88,7 +89,7 @@ export function CustomerChangePasswordScreen() {
           />
           <FormInput
             label="New password"
-            placeholder="Minimum 8 characters"
+            placeholder="8+ chars with upper/lower/number"
             secureTextEntry
             value={newPassword}
             onChangeText={setNewPassword}

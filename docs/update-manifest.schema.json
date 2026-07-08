@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrustivaSetu Update Manifest",
+  "type": "object",
+  "required": ["version", "buildNumber", "releaseDate", "releaseNotes", "apkUrl"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "buildNumber": { "type": "integer", "minimum": 1 },
+    "releaseDate": { "type": "string", "format": "date" },
+    "releaseNotes": { "type": "string" },
+    "apkUrl": { "type": "string", "pattern": "^https://app\\.trustivasetu\\.com/.+" },
+    "mandatory": { "type": "boolean" },
+    "minimumSupportedVersion": { "type": "string" },
+    "maintenanceMode": { "type": "boolean" },
+    "forceUpdate": { "type": "boolean" },
+    "iOSAppStoreUrl": { "type": "string" },
+    "source": { "type": "string" }
+  },
+  "additionalProperties": false
+}

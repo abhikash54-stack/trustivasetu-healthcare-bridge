@@ -6,6 +6,7 @@ import {
   View,
   Text as RNText,
 } from 'react-native';
+import { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -14,6 +15,8 @@ import { BRAND } from '../../theme/theme';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { APP_INFO } from '../../config/environment';
+import { checkForAvailableUpdates } from '../../hooks/useOTAUpdates';
+import { getCurrentAppVersionInfo, getLastUpdateCheck } from '../../services/updateService';
 
 function SettingRow({
   icon,
@@ -70,6 +73,12 @@ export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const user = useSelector((s: RootState) => s.auth.user);
+  const [lastUpdateCheck, setLastUpdateCheck] = useState<string | null>(null);
+  const versionInfo = getCurrentAppVersionInfo();
+
+  useEffect(() => {
+    getLastUpdateCheck().then(setLastUpdateCheck).catch(() => undefined);
+  }, []);
 
   const handleClearCache = () => {
     Alert.alert(
@@ -91,6 +100,12 @@ export function SettingsScreen() {
         },
       ],
     );
+  };
+
+  const handleCheckForUpdates = async () => {
+    await checkForAvailableUpdates(true);
+    const nextCheck = await getLastUpdateCheck();
+    setLastUpdateCheck(nextCheck);
   };
 
   return (
@@ -117,7 +132,33 @@ export function SettingsScreen() {
         <SettingRow
           icon="code"
           label="Version"
-          value={`v${APP_INFO.version}`}
+          value={`v${versionInfo.version}`}
+        />
+        <SettingRow
+          icon="build"
+          label="Build Number"
+          value={versionInfo.buildNumber}
+        />
+        <SettingRow
+          icon="event"
+          label="Release Date"
+          value={versionInfo.releaseDate}
+        />
+        <SettingRow
+          icon="system-update-alt"
+          label="OTA Status"
+          value="Enabled"
+        />
+        <SettingRow
+          icon="schedule"
+          label="Last Update Check"
+          value={lastUpdateCheck ? new Date(lastUpdateCheck).toLocaleString() : 'Not run yet'}
+        />
+        <SettingRow
+          icon="refresh"
+          label="Check for Updates"
+          subtitle="Verify the current app and download portal"
+          onPress={handleCheckForUpdates}
         />
         <SettingRow
           icon="business"
@@ -180,7 +221,7 @@ export function SettingsScreen() {
       <View style={styles.footer}>
         <RNText style={styles.footerText}>{APP_INFO.name}</RNText>
         <RNText style={styles.footerSub}>A Division of Aarthsetu Technologies Private Limited</RNText>
-        <RNText style={styles.footerVersion}>Build {APP_INFO.version} · Admin Settings</RNText>
+        <RNText style={styles.footerVersion}>Build {versionInfo.buildNumber} · Admin Settings</RNText>
       </View>
     </ScrollView>
   );

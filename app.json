@@ -2,14 +2,14 @@
   "expo": {
     "name": "TrustivaSetu",
     "slug": "trustivasetu",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aarthsetu.trustivasetu",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "Required for document uploads and KYC verification.",
         "NSPhotoLibraryUsageDescription": "Required for uploading clinic and lead documents.",
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.aarthsetu.trustivasetu",
-      "versionCode": 1,
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#006B3C",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -27,6 +27,12 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
@@ -44,11 +50,9 @@
         "projectId": "98b5cebf-5f97-4367-8422-573cbb574c87"
       }
     },
-    
     "plugins": [
       "expo-font",
       "expo-secure-store",
-      
       [
         "expo-splash-screen",
         {
@@ -58,7 +62,12 @@
         }
       ]
     ],
-    "owner": "aarthsetu1"
-    
+    "owner": "aarthsetu1",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/98b5cebf-5f97-4367-8422-573cbb574c87"
+    }
   }
 }

@@ -1,9 +1,11 @@
 import { ScrollView, StyleSheet, View, Text as RNText, Linking, TouchableOpacity } from 'react-native';
+import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BRAND } from '../../theme/theme';
 import { APP_INFO, CURRENT_ENV } from '../../config/environment';
+import { getCurrentAppVersionInfo, getLastUpdateCheck } from '../../services/updateService';
 
 function InfoRow({ icon, label, value, onPress }: { icon: string; label: string; value: string; onPress?: () => void }) {
   return (
@@ -28,6 +30,12 @@ function InfoRow({ icon, label, value, onPress }: { icon: string; label: string;
 export function AboutScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const [lastUpdateCheck, setLastUpdateCheck] = useState<string | null>(null);
+  const versionInfo = getCurrentAppVersionInfo();
+
+  useEffect(() => {
+    getLastUpdateCheck().then(setLastUpdateCheck).catch(() => undefined);
+  }, []);
 
   return (
     <ScrollView
@@ -60,7 +68,10 @@ export function AboutScreen() {
       {/* App Info */}
       <View style={styles.card}>
         <RNText style={styles.sectionTitle}>App information</RNText>
-        <InfoRow icon="info-outline" label="Version" value={`${APP_INFO.version} (Build ${APP_INFO.buildNumber})`} />
+        <InfoRow icon="info-outline" label="Version" value={`${versionInfo.version} (Build ${versionInfo.buildNumber})`} />
+        <InfoRow icon="event" label="Release Date" value={versionInfo.releaseDate} />
+        <InfoRow icon="system-update-alt" label="OTA Status" value="Enabled" />
+        <InfoRow icon="schedule" label="Last Update Check" value={lastUpdateCheck ? new Date(lastUpdateCheck).toLocaleString() : 'Not run yet'} />
         <InfoRow icon="business" label="Company" value="Aarthsetu Technologies Private Limited" />
         <InfoRow icon="category" label="Division" value="TrustivaSetu" />
         <InfoRow

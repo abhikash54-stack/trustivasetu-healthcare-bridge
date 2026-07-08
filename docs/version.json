@@ -1,0 +1,13 @@
+{
+  "version": "1.0.1",
+  "buildNumber": 2,
+  "releaseDate": "2026-07-08",
+  "releaseNotes": "Production-ready update portal, OTA checks, settings diagnostics, and permanent download experience for app.trustivasetu.com.",
+  "apkUrl": "https://app.trustivasetu.com/latest.apk",
+  "mandatory": false,
+  "minimumSupportedVersion": "1.0.0",
+  "maintenanceMode": false,
+  "forceUpdate": false,
+  "iOSAppStoreUrl": "https://app.trustivasetu.com",
+  "source": "github-pages"
+}

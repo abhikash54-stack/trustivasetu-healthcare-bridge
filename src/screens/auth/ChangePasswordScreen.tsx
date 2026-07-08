@@ -18,6 +18,7 @@ import { BRAND } from '../../theme/theme';
 import { changePassword, logout } from '../../services/authService';
 import { clearUser } from '../../services/storageService';
 import { signOut } from '../../store/slices/authSlice';
+import { PASSWORD_POLICY_MESSAGE, validateStrongPassword } from '../../utils/validators';
 
 export function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -56,8 +57,8 @@ export function ChangePasswordScreen() {
     if (!currentPassword) {
       return Alert.alert('Required', 'Enter your current password.');
     }
-    if (newPassword.length < 8) {
-      return Alert.alert('Weak password', 'New password must be at least 8 characters.');
+    if (!validateStrongPassword(newPassword)) {
+      return Alert.alert('Weak password', PASSWORD_POLICY_MESSAGE);
     }
     if (newPassword !== confirmPassword) {
       return Alert.alert('Password mismatch', 'New passwords do not match.');
@@ -96,7 +97,7 @@ export function ChangePasswordScreen() {
         />
         <FormInput
           label="New password"
-          placeholder="Minimum 8 characters"
+          placeholder="8+ chars with upper/lower/number"
           secureTextEntry
           value={newPassword}
           onChangeText={setNewPassword}

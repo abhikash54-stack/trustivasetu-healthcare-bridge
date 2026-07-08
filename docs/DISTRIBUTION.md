@@ -75,7 +75,7 @@ eas build --profile staging --platform android
 ```bash
 eas build --profile preview --platform android
 eas build --profile preview --platform ios
-# → EAS generates a shareable URL: https://expo.dev/accounts/trustivasetu/builds/...
+# → The public download experience remains the permanent portal at https://app.trustivasetu.com.
 ```
 
 ### Production AAB (Google Play Store upload)
@@ -154,8 +154,8 @@ GET    /api/testers/:id/audit       — View invitation audit trail
 ```bash
 eas build --profile preview --platform android
 # After build completes (~15 min):
-# Share URL: https://expo.dev/accounts/aarthsetu1/builds/<build-id>
-# Recipient installs directly from browser (Android) or TestFlight (iOS)
+# Public install experience: https://app.trustivasetu.com
+# Recipient installs directly from the permanent portal (Android) or TestFlight (iOS)
 ```
 
 ### Option B — Direct APK (quickest for Android)
@@ -174,20 +174,16 @@ npx expo start --tunnel
 ```
 
 ### Option D — Custom landing page at app.trustivasetu.com
-- This repository does not currently configure `app.trustivasetu.com` as an Expo OTA host.
-- Use `app.trustivasetu.com` as a simple install landing page that points to the current Android or iOS distribution route:
-  - Android direct install: `EAS build --profile staging --platform android` or `--profile production-apk`
-  - Store install: Play Store link after `production` release
-  - TestFlight / iOS install: after `eas submit --profile production --platform ios`
-  - Expo Go preview: `npx expo start --tunnel` QR code for testers
+- This repository uses `app.trustivasetu.com` as the single permanent public install portal.
+- New releases are published by updating the manifest at `docs/version.json` and replacing the APK asset at `docs/latest.apk` without changing the public URL.
 - Recommended page content:
   - “Download Android APK” button / link
-  - “Open in Expo Go” instructions with QR code
+  - “View release notes” section
   - “Request TestFlight access” for iOS
   - “Need help?” support contact `info@trustivasetu.com`
 - Keep these distribution responsibilities separate:
-  - `app.json` continues to use Expo update URL: `https://u.expo.dev/98b5cebf-5f97-4367-8422-573cbb574c87`
-  - Do not replace `updates.url` with `app.trustivasetu.com` unless you set up a custom Expo Updates host and custom domain through Expo/EAS.
+  - Expo OTA update checks remain managed by the app runtime.
+  - The permanent public download URL stays `https://app.trustivasetu.com` for all future releases.
 
 ---
 
